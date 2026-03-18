@@ -10,7 +10,6 @@ npm run android        # Start on Android emulator/device
 npm run ios            # Start on iOS simulator/device
 npm run web            # Start on web browser
 npm run lint           # Run ESLint via expo lint
-npm run reset-project  # Move starter code to app-example/ and start fresh
 ```
 
 No test runner is configured yet.
@@ -19,9 +18,62 @@ No test runner is configured yet.
 
 This is an **Expo 55 / React Native 0.83** app using **Expo Router** (file-based routing). Source lives under `src/` with the `@/` path alias resolving to `src/`.
 
+This is a **Task Assignment App** — multi-tenant SaaS for field task management. Three mobile roles: Business Owner (BO), Operation Team (OT), Staff.
+
 ### Routing
 
-`src/app/` is the Expo Router root. `_layout.tsx` wraps the entire app in React Navigation's `ThemeProvider` and renders `AppTabs`. Screens are `index.tsx` (Home) and `explore.tsx` (Explore).
+`src/app/` is the Expo Router root. `_layout.tsx` wraps the entire app in `ThemeProvider` + `AnimatedSplashOverlay` and renders a `Stack` navigator.
+
+`src/app/index.tsx` reads the current user's role and redirects to the correct route group. Role is currently mocked via `MOCK_ROLE` — replace with real auth context when auth is implemented.
+
+#### Route groups by role
+
+```
+src/app/
+├── _layout.tsx              → Stack navigator (ThemeProvider + AnimatedSplashOverlay)
+├── index.tsx                → Role-based redirect (MOCK_ROLE → bo/ot/staff/auth)
+├── notifications.tsx        → Shared — Notification Center (all roles)
+│
+├── (auth)/
+│   ├── _layout.tsx
+│   └── login.tsx            → Login / Authentication (AU-01 to AU-05)
+│
+├── (bo)/                    → Business Owner screens
+│   ├── _layout.tsx
+│   ├── index.tsx            → Dashboard Overview (TM-11)
+│   ├── audit-log.tsx        → Audit Log — BO only (AL-01 to AL-06)
+│   ├── employees.tsx        → Employee Management — full access (UM-01 to UM-08)
+│   ├── rejected-overdue.tsx → Rejected/Overdue Handling
+│   └── tasks/
+│       ├── index.tsx        → Task Manager (TM-07, TM-09, TM-10)
+│       ├── [id].tsx         → Task Detail — management view (TM-08, AL-05)
+│       └── create.tsx       → Create/Edit Task (TM-01 to TM-06)
+│
+├── (ot)/                    → Operation Team screens
+│   ├── _layout.tsx
+│   ├── index.tsx            → Team Dashboard
+│   ├── assignment.tsx       → Task Assignment (TM-04)
+│   ├── employees.tsx        → Employee Management — invite only (UM-01 to UM-06)
+│   ├── rejected-overdue.tsx → Rejected/Overdue Handling
+│   └── tasks/
+│       ├── [id].tsx         → Task Detail — management view (same as BO)
+│       └── create.tsx       → Create/Edit Task
+│
+└── (staff)/                 → Staff screens
+    ├── _layout.tsx
+    ├── index.tsx            → My Task List (ST-01)
+    ├── history.tsx          → Work History (ST-03)
+    └── tasks/
+        └── [id].tsx         → Task Detail & Execution — check in/out, reject (ST-02, CI-01 to CI-06)
+```
+
+#### Shared screens (BO + OT)
+
+Task Detail, Task Create/Edit, Employee Management, and Rejected/Overdue exist in both `(bo)/` and `(ot)/` with different permission levels. They should share underlying components but maintain separate routes.
+
+#### Staff Task Detail is independent
+
+`(staff)/tasks/[id].tsx` is a completely different screen from the management view — it renders Check In, Check Out, and Reject actions. Do not merge it with BO/OT task detail.
 
 ### Platform-specific files
 
@@ -29,9 +81,9 @@ The codebase uses Expo's `.web.ts(x)` extension convention to swap implementatio
 
 | Native | Web |
 |---|---|
-| `app-tabs.tsx` — uses `expo-router/unstable-native-tabs` `NativeTabs` | `app-tabs.web.tsx` — uses `expo-router/ui` `Tabs`/`TabList` |
 | `animated-icon.tsx` | `animated-icon.web.tsx` |
-| `use-color-scheme.ts` | `use-color-scheme.web.ts` (adds hydration guard for static rendering) |
+
+`app-tabs.tsx` and `app-tabs.web.tsx` exist in `src/components/` but are no longer used in the root layout (kept for reference when building role-specific tab UIs).
 
 ### Theming
 
