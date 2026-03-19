@@ -145,3 +145,69 @@ export interface PaginatedResponse<T> {
   data: T[];
   meta: PaginationMeta;
 }
+
+// ─── Tenant ───────────────────────────────────────────────────────────────────
+
+export interface TenantOption {
+  id: string;
+  name: string;
+  slug: string;
+  role: UserRole;
+}
+
+export interface TenantInfo {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+// ─── Auth (extended) ──────────────────────────────────────────────────────────
+
+export interface RegisterInput {
+  email: string;
+  password: string;
+  full_name: string;
+  tenant_name: string;
+  tenant_slug?: string;
+}
+
+export interface RegisterResponse {
+  access_token: string;
+  user: UserProfile;
+  tenant: TenantInfo;
+}
+
+export interface LoginSingleResponse {
+  access_token: string;
+  user: UserProfile;
+  tenants: TenantOption[];
+}
+export interface LoginMultiResponse {
+  user: { id: string; email: string; full_name: string };
+  tenants: TenantOption[];
+  requires_tenant_selection: true;
+}
+export interface LoginSuperadminResponse {
+  access_token: string;
+  user: UserProfile;
+}
+export type LoginResponse = LoginSingleResponse | LoginMultiResponse | LoginSuperadminResponse;
+
+export interface SelectTenantResponse {
+  access_token: string;
+  user: UserProfile;
+}
+
+// ─── In-app invitations (received by the logged-in user) ─────────────────────
+
+export interface InAppInvitation {
+  id: string;
+  tenant_id: string;
+  email: string;
+  role: UserRole;
+  delivery: 'in_app';
+  status: 'pending' | 'accepted' | 'declined' | 'expired';
+  expires_at: string;
+  created_at: string;
+  tenants: TenantInfo;
+}

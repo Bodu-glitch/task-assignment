@@ -1,5 +1,5 @@
 import { apiFetch } from './client';
-import type { StaffMember, Invitation, PaginatedResponse } from '@/types/api';
+import type { StaffMember, Invitation, InAppInvitation, PaginatedResponse } from '@/types/api';
 
 export const staffApi = {
   list: (page = 1, limit = 20) =>
@@ -28,5 +28,18 @@ export const staffApi = {
     apiFetch<{ data: StaffMember }>('/staff/register', {
       method: 'POST',
       body: JSON.stringify({ token, full_name, password, phone }),
+    }),
+
+  myInvitations: () =>
+    apiFetch<{ data: { data: InAppInvitation[] } }>('/staff/my-invitations'),
+
+  acceptInvitation: (id: string) =>
+    apiFetch<{ data: { message: string } }>(`/staff/invitations/${id}/accept`, {
+      method: 'PATCH',
+    }),
+
+  declineInvitation: (id: string) =>
+    apiFetch<{ data: { message: string } }>(`/staff/invitations/${id}/decline`, {
+      method: 'PATCH',
     }),
 };

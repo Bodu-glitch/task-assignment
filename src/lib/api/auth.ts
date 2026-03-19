@@ -1,11 +1,23 @@
 import { apiFetch } from './client';
-import type { UserProfile } from '@/types/api';
+import type { UserProfile, LoginResponse, RegisterInput, RegisterResponse, SelectTenantResponse } from '@/types/api';
 
 export const authApi = {
   login: (email: string, password: string) =>
-    apiFetch<{ data: { access_token: string } }>('/auth/login', {
+    apiFetch<{ data: LoginResponse }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
+    }),
+
+  register: (input: RegisterInput) =>
+    apiFetch<{ data: RegisterResponse }>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+
+  selectTenant: (user_id: string, tenant_id: string) =>
+    apiFetch<{ data: SelectTenantResponse }>('/auth/select-tenant', {
+      method: 'POST',
+      body: JSON.stringify({ user_id, tenant_id }),
     }),
 
   logout: () =>

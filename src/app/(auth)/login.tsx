@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
-import { View, Text, TextInput, Pressable, ScrollView } from '@/tw';
+import { View, Text, TextInput, Pressable, ScrollView, Link } from '@/tw';
 import { useAuth } from '@/context/auth';
 import { ApiError } from '@/lib/api/client';
 
@@ -97,6 +97,13 @@ export default function LoginScreen() {
               <Text className="text-white font-semibold text-base">Sign In</Text>
             )}
           </Pressable>
+        </View>
+
+        <View className="items-center mt-6">
+          <Text className="text-sm text-gray-500 dark:text-gray-400">Don't have an account? </Text>
+          <Link href="/(auth)/register">
+            <Text className="text-sm font-semibold text-brand">Create one</Text>
+          </Link>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
