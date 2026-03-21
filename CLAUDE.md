@@ -18,25 +18,39 @@ No test runner is configured yet.
 
 This is an **Expo 55 / React Native 0.83** app using **Expo Router** (file-based routing). Source lives under `src/` with the `@/` path alias resolving to `src/`.
 
-This is a **Task Assignment App** — multi-tenant SaaS for field task management. Three mobile roles: Business Owner (BO), Operation Team (OT), Staff.
+This is a **Task Assignment App** — multi-tenant SaaS for field task management. Three mobile roles: Business Owner (BO), Operation Team (OT), Staff. Role values in code: `business_owner`, `operator`, `staff`.
+
+### Auth
+
+Auth is handled by `src/context/auth.tsx` (`AuthProvider` / `useAuth()`). It persists a JWT token via `tokenStore` (in `src/lib/api/client.ts`) and exposes: `login`, `logout`, `register`, `selectTenant`, `refreshProfile`, `role`, `user`, `pendingSelection`.
+
+Login may return a `requires_tenant_selection` response — in this case `pendingSelection` is set and the user is redirected to `/(auth)/select-tenant` before a token is issued.
+
+`src/app/index.tsx` uses `useAuth()` to redirect:
+1. Loading → `<LoadingScreen />`
+2. `pendingSelection` → `/(auth)/select-tenant`
+3. Not logged in → `/(auth)/login`
+4. Has pending invitations → `/(auth)/invitations`
+5. By role: `business_owner` → `/(bo)`, `operator` → `/(ot)`, `staff` → `/(staff)`
 
 ### Routing
 
 `src/app/` is the Expo Router root. `_layout.tsx` wraps the entire app in `ThemeProvider` + `AnimatedSplashOverlay` and renders a `Stack` navigator.
-
-`src/app/index.tsx` reads the current user's role and redirects to the correct route group. Role is currently mocked via `MOCK_ROLE` — replace with real auth context when auth is implemented.
 
 #### Route groups by role
 
 ```
 src/app/
 ├── _layout.tsx              → Stack navigator (ThemeProvider + AnimatedSplashOverlay)
-├── index.tsx                → Role-based redirect (MOCK_ROLE → bo/ot/staff/auth)
+├── index.tsx                → Auth-aware redirect (useAuth → bo/ot/staff/auth)
 ├── notifications.tsx        → Shared — Notification Center (all roles)
 │
 ├── (auth)/
 │   ├── _layout.tsx
-│   └── login.tsx            → Login / Authentication (AU-01 to AU-05)
+│   ├── login.tsx            → Login (AU-01 to AU-05)
+│   ├── register.tsx         → Register new account + tenant
+│   ├── select-tenant.tsx    → Tenant picker (multi-tenant login flow)
+│   └── invitations.tsx      → Pending staff invitations on first login
 │
 ├── (bo)/                    → Business Owner screens
 │   ├── _layout.tsx
@@ -56,6 +70,7 @@ src/app/
 │   ├── employees.tsx        → Employee Management — invite only (UM-01 to UM-06)
 │   ├── rejected-overdue.tsx → Rejected/Overdue Handling
 │   └── tasks/
+│       ├── index.tsx        → Task List (same filters as BO)
 │       ├── [id].tsx         → Task Detail — management view (same as BO)
 │       └── create.tsx       → Create/Edit Task
 │
@@ -74,6 +89,22 @@ Task Detail, Task Create/Edit, Employee Management, and Rejected/Overdue exist i
 #### Staff Task Detail is independent
 
 `(staff)/tasks/[id].tsx` is a completely different screen from the management view — it renders Check In, Check Out, and Reject actions. Do not merge it with BO/OT task detail.
+
+### API layer
+
+`src/lib/api/` contains all backend API modules:
+
+| Module | Purpose |
+|---|---|
+| `client.ts` | Axios base client + `tokenStore` (JWT persistence) |
+| `auth.ts` | login, logout, register, profile, selectTenant |
+| `me.ts` | Current user profile endpoints |
+| `tasks.ts` | Task CRUD, list, status transitions |
+| `staff.ts` | Staff management + `myInvitations()` |
+| `audit.ts` | Audit log queries |
+| `notifications.ts` | Notification endpoints |
+
+Types for all API responses live in `src/types/api.ts`.
 
 ### Platform-specific files
 
