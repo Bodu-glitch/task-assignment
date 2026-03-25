@@ -17,7 +17,7 @@ const STAT_CARDS: {
   status?: TaskStatus;
 }[] = [
   { key: 'todo',        label: 'Pending',     pillColor: '#f59e0b', status: 'todo' },
-  { key: 'in_progress', label: 'In Progress', pillColor: '#003d9b', status: 'in_progress' },
+  { key: 'in_progress', label: 'In Progress', pillColor: '#1E40AF', status: 'in_progress' },
   { key: 'done',        label: 'Done',        pillColor: '#10b981', status: 'done' },
   { key: 'rejected',    label: 'Rejected',    pillColor: '#ba1a1a', status: 'rejected' },
   { key: 'overdue',     label: 'Overdue',     pillColor: '#f97316' },
@@ -37,7 +37,7 @@ function emptyStats() {
 }
 
 export default function BODashboardScreen() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { data, isLoading, isError, refetch, isRefetching } = useQuery({
     queryKey: ['dashboard'],
     queryFn: () => tasksApi.dashboard(),
@@ -47,15 +47,30 @@ export default function BODashboardScreen() {
   if (isError) return <ErrorView onRetry={refetch} />;
 
   const stats = data?.data ?? emptyStats();
+  const initials =
+    user?.full_name
+      ?.split(' ')
+      .slice(0, 2)
+      .map((w) => w[0])
+      .join('')
+      .toUpperCase() ?? 'U';
 
   return (
+    <View collapsable={false} style={{ flex: 1 }}>
     <ScrollView
       className="flex-1 bg-surface"
       refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
     >
       {/* Glass Header */}
       <View className="glass-effect px-5 pt-14 pb-4 flex-row items-center justify-between">
-        <View>
+        <Pressable
+          onPress={() => router.push('/profile')}
+          className="w-10 h-10 rounded-xl items-center justify-center active:opacity-75"
+          style={{ backgroundColor: '#1E40AF' }}
+        >
+          <Text className="text-white font-bold text-sm">{initials}</Text>
+        </Pressable>
+        <View className="flex-1 mx-3">
           <Text className="text-[10px] font-bold uppercase tracking-widest text-primary" style={{ opacity: 0.7 }}>
             Welcome Back
           </Text>
@@ -63,8 +78,11 @@ export default function BODashboardScreen() {
             {user?.full_name ?? 'Business Owner'}
           </Text>
         </View>
-        <Pressable onPress={logout} className="w-10 h-10 items-center justify-center rounded-xl active:opacity-60">
-          <Text className="text-on-surface-variant text-lg">⎋</Text>
+        <Pressable
+          onPress={() => router.push('/notifications')}
+          className="w-10 h-10 items-center justify-center rounded-xl active:opacity-60"
+        >
+          <Text className="text-on-surface text-xl">🔔</Text>
         </Pressable>
       </View>
 
@@ -132,5 +150,6 @@ export default function BODashboardScreen() {
         </View>
       </View>
     </ScrollView>
+    </View>
   );
 }

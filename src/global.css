@@ -4,13 +4,13 @@
 
 @layer theme {
   @theme {
-    --color-brand: #208AEF;
+    --color-brand: #1E40AF;
 
     /* Executive Kinetic Design System — Material Design 3 tokens */
-    --color-primary: #003d9b;
-    --color-primary-container: #0052cc;
+    --color-primary: #1E40AF;
+    --color-primary-container: #2563EB;
     --color-on-primary: #ffffff;
-    --color-on-primary-container: #c4d2ff;
+    --color-on-primary-container: #dbeafe;
 
     --color-secondary: #4c5d8d;
     --color-secondary-container: #b6c8fe;
@@ -60,7 +60,7 @@
 
 /* Kinetic utility classes */
 .kinetic-gradient {
-  background: linear-gradient(135deg, #003d9b 0%, #0052cc 100%);
+  background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%);
 }
 
 .glass-effect {

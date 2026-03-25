@@ -71,6 +71,7 @@ src/app/
 ├── _layout.tsx              → Stack navigator (ThemeProvider + AnimatedSplashOverlay)
 ├── index.tsx                → Auth-aware redirect (useAuth → bo/ot/staff/auth)
 ├── notifications.tsx        → Shared — Notification Center (all roles)
+├── profile.tsx              → Shared — Profile screen (all roles, no tab bar)
 │
 ├── (auth)/
 │   ├── _layout.tsx
@@ -81,12 +82,14 @@ src/app/
 │   └── invitations.tsx      → Pending staff invitations on first login
 │
 ├── (bo)/                    → Business Owner screens
-│   ├── _layout.tsx
+│   ├── _layout.tsx          → NativeTabs (4 tabs: Dashboard, Staff, Tasks, Audit)
+│   ├── _layout.web.tsx      → Headless tabs fallback for web (expo-router/ui)
 │   ├── index.tsx            → Dashboard Overview (TM-11)
 │   ├── audit-log.tsx        → Audit Log — BO only (AL-01 to AL-06)
 │   ├── employees.tsx        → Employee Management — full access (UM-01 to UM-08)
-│   ├── rejected-overdue.tsx → Rejected/Overdue Handling
+│   ├── rejected-overdue.tsx → Rejected/Overdue Handling (not a tab — pushed via router)
 │   └── tasks/
+│       ├── _layout.tsx      → Stack navigator (nested inside Tasks tab)
 │       ├── index.tsx        → Task Manager (TM-07, TM-09, TM-10)
 │       ├── [id].tsx         → Task Detail — management view (TM-08, AL-05)
 │       └── create.tsx       → Create/Edit Task (TM-01 to TM-06)
@@ -118,6 +121,15 @@ Task Detail, Task Create/Edit, Employee Management, and Rejected/Overdue exist i
 
 `(staff)/tasks/[id].tsx` is a completely different screen from the management view — it renders Check In, Check Out, and Reject actions. Do not merge it with BO/OT task detail.
 
+#### NativeTabs navigation pattern (BO)
+
+`(bo)/_layout.tsx` uses `NativeTabs` from `expo-router/unstable-native-tabs`. Key rules:
+
+- **Only screens listed as `NativeTabs.Trigger` appear in the tab bar.** Screens not listed (e.g. `rejected-overdue`) are still accessible via `router.push('/(bo)/rejected-overdue')` but have no tab icon.
+- **Screens inside a tab group that need push navigation must have their own `_layout.tsx` with `<Stack>`.** This is why `(bo)/tasks/_layout.tsx` exists — without it, `tasks/[id]` and `tasks/create` would either become extra tabs or break navigation.
+- **`(bo)/_layout.web.tsx`** replaces the native layout on web, using headless tabs from `expo-router/ui`. The `.web.tsx` extension convention is used here.
+- When wrapping a `ScrollView` inside a NativeTabs screen, wrap it in `<View collapsable={false}>` so the tap-to-scroll-top behaviour works correctly on Android.
+
 ### API layer
 
 `src/lib/api/` contains all backend API modules:
@@ -141,8 +153,9 @@ The codebase uses Expo's `.web.ts(x)` extension convention to swap implementatio
 | Native | Web |
 |---|---|
 | `animated-icon.tsx` | `animated-icon.web.tsx` |
+| `(bo)/_layout.tsx` | `(bo)/_layout.web.tsx` |
 
-`app-tabs.tsx` and `app-tabs.web.tsx` exist in `src/components/` but are no longer used in the root layout (kept for reference when building role-specific tab UIs).
+`src/components/app-tabs.tsx` and `app-tabs.web.tsx` are kept as reference patterns for the NativeTabs + headless tabs combination. The active BO navigation follows the same pattern directly in the route layout files.
 
 ### Theming
 
@@ -151,12 +164,13 @@ Tailwind CSS (NativeWind v5 / Tailwind v4) is the single theming layer. All them
 ```css
 @layer theme {
   @theme {
-    --color-brand: #208AEF;
+    --color-brand: #1E40AF;
+    --color-primary: #1E40AF;
   }
 }
 ```
 
-Light/dark mode is handled with Tailwind's `dark:` variant. Platform-specific CSS variables use `@media ios` / `@media android` blocks (already in `global.css`). `postcss.config.mjs` drives the PostCSS pipeline; `metro.config.js` wires it into Metro.
+Primary brand color is `#1E40AF` (Tailwind blue-800). Light/dark mode is handled with Tailwind's `dark:` variant. Platform-specific CSS variables use `@media ios` / `@media android` blocks (already in `global.css`). `postcss.config.mjs` drives the PostCSS pipeline; `metro.config.js` wires it into Metro.
 
 **CSS-wrapped components** in `src/tw/` must be used instead of bare `react-native` primitives — core RN components do not accept `className` directly:
 
