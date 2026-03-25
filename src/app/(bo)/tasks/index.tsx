@@ -1,63 +1,64 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { FlatList, RefreshControl, ActivityIndicator } from 'react-native';
+import { FlatList, RefreshControl } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { View, Text, Pressable } from '@/tw';
 import { tasksApi } from '@/lib/api/tasks';
-import { StatusBadge, PriorityBadge } from '@/components/ui/StatusBadge';
+import { StatusBadge, PriorityBadge, PRIORITY_PILL_COLOR } from '@/components/ui/StatusBadge';
 import { ErrorView } from '@/components/ui/ErrorView';
 import type { Task, TaskStatus } from '@/types/api';
 
 const STATUS_FILTERS: { label: string; value: TaskStatus | undefined }[] = [
-  { label: 'All', value: undefined },
-  { label: 'Pending', value: 'pending' },
+  { label: 'All',         value: undefined },
+  { label: 'Pending',     value: 'todo' },
   { label: 'In Progress', value: 'in_progress' },
-  { label: 'Completed', value: 'completed' },
-  { label: 'Cancelled', value: 'cancelled' },
-  { label: 'Rejected', value: 'rejected' },
+  { label: 'Done',        value: 'done' },
+  { label: 'Cancelled',   value: 'cancelled' },
+  { label: 'Rejected',    value: 'rejected' },
 ];
 
-function TaskCard({ task }: { task: Task }) {
+function TaskCard({ task, onPress }: { task: Task; onPress: () => void }) {
+  const pillColor = task.priority ? PRIORITY_PILL_COLOR[task.priority] : 'bg-outline';
   return (
     <Pressable
-      onPress={() => router.push({ pathname: '/(bo)/tasks/[id]', params: { id: task.id } })}
-      className="bg-white dark:bg-gray-900 rounded-2xl p-4 mb-3 mx-4 border border-gray-100 dark:border-gray-800 active:opacity-70"
+      onPress={onPress}
+      className="bg-surface-container-lowest rounded-xl p-5 mb-3 mx-4 overflow-hidden active:opacity-75"
     >
-      <View className="flex-row items-start justify-between mb-2">
-        <Text
-          className="text-base font-semibold text-gray-900 dark:text-white flex-1 mr-2"
-          numberOfLines={1}
-        >
+      {/* Left priority pill */}
+      <View className={`absolute left-0 top-0 bottom-0 w-1 ${pillColor}`} />
+
+      <View className="flex-row items-start justify-between mb-3">
+        <Text className="text-base font-bold text-on-surface flex-1 mr-3" numberOfLines={2}>
           {task.title}
         </Text>
         <StatusBadge status={task.status} />
       </View>
 
       {task.priority && (
-        <View className="mb-2">
+        <View className="mb-3">
           <PriorityBadge priority={task.priority} />
         </View>
       )}
 
-      {task.location_name && (
-        <Text className="text-xs text-gray-500 mb-1" numberOfLines={1}>
-          📍 {task.location_name}
-        </Text>
-      )}
-
-      {task.scheduled_at && (
-        <Text className="text-xs text-gray-400">
-          🕐 {new Date(task.scheduled_at).toLocaleDateString('vi-VN', {
-            day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
-          })}
-        </Text>
-      )}
-
-      {task.assignees.length > 0 && (
-        <Text className="text-xs text-gray-400 mt-1">
-          👥 {task.assignees.map((a) => a.full_name).join(', ')}
-        </Text>
-      )}
+      <View className="gap-1.5">
+        {task.location_name && (
+          <Text className="text-xs text-on-surface-variant" numberOfLines={1}>
+            📍 {task.location_name}
+          </Text>
+        )}
+        {task.scheduled_at && (
+          <Text className="text-xs text-on-surface-variant">
+            🕐 {new Date(task.scheduled_at).toLocaleDateString('vi-VN', {
+              day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+            })}
+          </Text>
+        )}
+        {(task.assignees?.length ?? 0) > 0 && (
+          <Text className="text-xs text-on-surface-variant" numberOfLines={1}>
+            👥 {task.assignees!.map((a) => a.full_name).join(', ')}
+          </Text>
+        )}
+      </View>
     </Pressable>
   );
 }
@@ -76,43 +77,43 @@ export default function TaskManagerScreen() {
   const meta = data?.meta;
 
   return (
-    <View className="flex-1 bg-gray-50 dark:bg-black">
-      {/* Header */}
-      <View className="bg-white dark:bg-gray-900 px-5 pt-14 pb-3 border-b border-gray-100 dark:border-gray-800">
-        <View className="flex-row items-center justify-between mb-3">
-          <Pressable onPress={() => router.back()} className="active:opacity-60 mr-2">
-            <Text className="text-brand text-base">← Back</Text>
+    <View className="flex-1 bg-surface-container-low">
+      {/* Glass Header */}
+      <View className="glass-effect px-5 pt-14 pb-3">
+        <View className="flex-row items-center justify-between mb-4">
+          <Pressable onPress={() => router.back()} className="active:opacity-60 mr-3">
+            <Text className="text-primary font-semibold">← Back</Text>
           </Pressable>
-          <Text className="text-lg font-bold text-gray-900 dark:text-white flex-1">Tasks</Text>
+          <Text className="text-xl font-extrabold text-on-surface tracking-tight flex-1">
+            Task Portfolio
+          </Text>
           <Pressable
             onPress={() => router.push('/(bo)/tasks/create')}
-            className="bg-brand rounded-xl px-3 py-1.5 active:opacity-80"
+            className="kinetic-gradient w-9 h-9 rounded-full items-center justify-center active:opacity-80"
           >
-            <Text className="text-white text-sm font-semibold">+ New</Text>
+            <Text className="text-on-primary text-xl font-bold">+</Text>
           </Pressable>
         </View>
 
+        {/* Filter chips */}
         <FlatList
           horizontal
           showsHorizontalScrollIndicator={false}
           data={STATUS_FILTERS}
           keyExtractor={(item) => item.label}
-          renderItem={({ item }) => (
-            <Pressable
-              onPress={() => { setStatusFilter(item.value); setPage(1); }}
-              className={`px-3 py-1.5 rounded-full mr-2 ${
-                statusFilter === item.value ? 'bg-brand' : 'bg-gray-100 dark:bg-gray-800'
-              }`}
-            >
-              <Text
-                className={`text-sm font-medium ${
-                  statusFilter === item.value ? 'text-white' : 'text-gray-600 dark:text-gray-300'
-                }`}
+          renderItem={({ item }) => {
+            const active = statusFilter === item.value;
+            return (
+              <Pressable
+                onPress={() => { setStatusFilter(item.value); setPage(1); }}
+                className={`px-5 py-2 rounded-full mr-2 ${active ? 'kinetic-gradient' : 'bg-surface-container-highest'}`}
               >
-                {item.label}
-              </Text>
-            </Pressable>
-          )}
+                <Text className={`text-xs font-bold ${active ? 'text-on-primary' : 'text-on-surface-variant'}`}>
+                  {item.label}
+                </Text>
+              </Pressable>
+            );
+          }}
         />
       </View>
 
@@ -122,15 +123,20 @@ export default function TaskManagerScreen() {
         <FlatList
           data={tasks}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <TaskCard task={item} />}
-          contentContainerStyle={{ paddingTop: 12, paddingBottom: 24 }}
+          renderItem={({ item }) => (
+            <TaskCard
+              task={item}
+              onPress={() => router.push({ pathname: '/(bo)/tasks/[id]', params: { id: item.id } })}
+            />
+          )}
+          contentContainerStyle={{ paddingTop: 16, paddingBottom: 32 }}
           refreshControl={
             <RefreshControl refreshing={isRefetching} onRefresh={() => { setPage(1); refetch(); }} />
           }
           ListEmptyComponent={
             isLoading ? null : (
-              <View className="flex-1 items-center justify-center py-16">
-                <Text className="text-gray-400">No tasks found</Text>
+              <View className="flex-1 items-center justify-center py-20">
+                <Text className="text-on-surface-variant text-sm">No tasks found</Text>
               </View>
             )
           }
@@ -138,9 +144,9 @@ export default function TaskManagerScreen() {
             meta && meta.page * meta.limit < meta.total ? (
               <Pressable
                 onPress={() => setPage((p) => p + 1)}
-                className="mx-4 mb-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 items-center active:opacity-60"
+                className="mx-4 mb-4 py-3 rounded-xl bg-surface-container-high items-center active:opacity-70"
               >
-                <Text className="text-brand font-medium">Load more</Text>
+                <Text className="text-primary font-semibold text-sm">Load more</Text>
               </Pressable>
             ) : null
           }

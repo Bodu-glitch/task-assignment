@@ -16,6 +16,14 @@ function slugify(text: string): string {
     .replace(/-+/g, '-');
 }
 
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <Text className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant px-1 mb-2">
+      {children}
+    </Text>
+  );
+}
+
 export default function RegisterScreen() {
   const { register } = useAuth();
   const router = useRouter();
@@ -62,19 +70,15 @@ export default function RegisterScreen() {
     setLoading(true);
     try {
       await register(email.trim(), password, fullName.trim(), tenantName.trim(), tenantSlug || undefined);
-      // On success, auth state is set and index.tsx redirects automatically
+      router.replace('/');
     } catch (e) {
-      let message = 'Đăng ký thất bại. Vui lòng thử lại.';
+      let message = 'Registration failed. Please try again.';
       if (e instanceof ApiError) {
-        if (e.code === 'EMAIL_ALREADY_EXISTS') {
-          message = 'Email đã được đăng ký. Hãy thử đăng nhập.';
-        } else if (e.code === 'SLUG_ALREADY_EXISTS') {
-          message = 'Workspace URL đã được dùng. Chọn tên khác.';
-        } else {
-          message = e.message || message;
-        }
+        if (e.code === 'EMAIL_ALREADY_EXISTS') message = 'Email already registered. Try signing in.';
+        else if (e.code === 'SLUG_ALREADY_EXISTS') message = 'Workspace URL already taken. Choose another.';
+        else message = e.message || message;
       }
-      Alert.alert('Đăng ký thất bại', message);
+      Alert.alert('Registration Failed', message);
     } finally {
       setLoading(false);
     }
@@ -86,28 +90,31 @@ export default function RegisterScreen() {
       style={{ flex: 1 }}
     >
       <ScrollView
-        contentContainerClassName="flex-grow px-6 py-10 bg-white dark:bg-black"
+        className="flex-1 bg-surface"
+        contentContainerClassName="flex-grow px-6 py-12"
         keyboardShouldPersistTaps="handled"
       >
-        {/* Header */}
-        <View className="mb-8 items-center">
-          <View className="w-16 h-16 rounded-2xl bg-brand items-center justify-center mb-4">
-            <Text className="text-white text-3xl font-bold">T</Text>
+        {/* Branding Header */}
+        <View className="items-center mb-10">
+          <View className="w-16 h-16 rounded-xl bg-primary items-center justify-center mb-6 shadow-sm">
+            <Text className="text-on-primary text-3xl font-black">T</Text>
           </View>
-          <Text className="text-2xl font-bold text-gray-900 dark:text-white">Create Account</Text>
-          <Text className="text-sm text-gray-500 mt-1">Set up your workspace</Text>
+          <Text className="text-3xl font-extrabold text-on-surface tracking-tight">
+            Create Account
+          </Text>
+          <Text className="text-sm text-on-surface-variant mt-2">
+            Set up your professional workspace
+          </Text>
         </View>
 
-        {/* Form */}
-        <View className="gap-4">
+        {/* Personal Info Section */}
+        <View className="gap-5">
           <View>
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Full Name <Text className="text-red-500">*</Text>
-            </Text>
+            <FieldLabel>Full Name</FieldLabel>
             <TextInput
-              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-base text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900"
-              placeholder="Nguyễn Văn A"
-              placeholderTextColor="#9ca3af"
+              className="w-full h-14 px-4 bg-surface-container-high rounded-xl text-on-surface text-base"
+              placeholder="Nguyen Van A"
+              placeholderTextColor="#737685"
               value={fullName}
               onChangeText={setFullName}
               autoCapitalize="words"
@@ -117,13 +124,11 @@ export default function RegisterScreen() {
           </View>
 
           <View>
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Email <Text className="text-red-500">*</Text>
-            </Text>
+            <FieldLabel>Professional Email</FieldLabel>
             <TextInput
-              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-base text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900"
-              placeholder="you@example.com"
-              placeholderTextColor="#9ca3af"
+              className="w-full h-14 px-4 bg-surface-container-high rounded-xl text-on-surface text-base"
+              placeholder="name@company.com"
+              placeholderTextColor="#737685"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -134,13 +139,11 @@ export default function RegisterScreen() {
           </View>
 
           <View>
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Password <Text className="text-red-500">*</Text>
-            </Text>
+            <FieldLabel>Security Code</FieldLabel>
             <TextInput
-              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-base text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900"
+              className="w-full h-14 px-4 bg-surface-container-high rounded-xl text-on-surface text-base"
               placeholder="At least 6 characters"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#737685"
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -150,13 +153,11 @@ export default function RegisterScreen() {
           </View>
 
           <View>
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Confirm Password <Text className="text-red-500">*</Text>
-            </Text>
+            <FieldLabel>Confirm Code</FieldLabel>
             <TextInput
-              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-base text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900"
+              className="w-full h-14 px-4 bg-surface-container-high rounded-xl text-on-surface text-base"
               placeholder="••••••••"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#737685"
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry
@@ -164,20 +165,19 @@ export default function RegisterScreen() {
             />
           </View>
 
+          {/* Business info divider */}
           <View className="mt-2">
-            <Text className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">
-              Business Info
+            <Text className="text-[10px] font-bold uppercase tracking-widest text-outline mb-5">
+              — Business Info
             </Text>
 
-            <View className="gap-4">
+            <View className="gap-5">
               <View>
-                <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                  Business Name <Text className="text-red-500">*</Text>
-                </Text>
+                <FieldLabel>Business Name</FieldLabel>
                 <TextInput
-                  className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-base text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900"
+                  className="w-full h-14 px-4 bg-surface-container-high rounded-xl text-on-surface text-base"
                   placeholder="Acme Corp"
-                  placeholderTextColor="#9ca3af"
+                  placeholderTextColor="#737685"
                   value={tenantName}
                   onChangeText={setTenantName}
                   autoCapitalize="words"
@@ -186,14 +186,11 @@ export default function RegisterScreen() {
               </View>
 
               <View>
-                <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                  Workspace URL{' '}
-                  <Text className="text-gray-400 font-normal">(optional)</Text>
-                </Text>
+                <FieldLabel>Workspace URL (optional)</FieldLabel>
                 <TextInput
-                  className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-base text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900"
+                  className="w-full h-14 px-4 bg-surface-container-high rounded-xl text-on-surface text-base"
                   placeholder="acme-corp"
-                  placeholderTextColor="#9ca3af"
+                  placeholderTextColor="#737685"
                   value={tenantSlug}
                   onChangeText={handleSlugChange}
                   autoCapitalize="none"
@@ -201,7 +198,7 @@ export default function RegisterScreen() {
                   editable={!loading}
                 />
                 {tenantSlug.length > 0 && (
-                  <Text className="text-xs text-gray-400 mt-1 ml-1">
+                  <Text className="text-xs text-on-surface-variant mt-2 ml-1">
                     app.example.com/{tenantSlug}
                   </Text>
                 )}
@@ -212,20 +209,20 @@ export default function RegisterScreen() {
           <Pressable
             onPress={handleRegister}
             disabled={loading}
-            className="w-full bg-brand rounded-xl py-3.5 items-center justify-center mt-4 active:opacity-80 disabled:opacity-50"
+            className="kinetic-gradient w-full h-14 rounded-xl items-center justify-center mt-2 shadow-sm active:opacity-90 disabled:opacity-50"
           >
             {loading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color="#ffffff" />
             ) : (
-              <Text className="text-white font-semibold text-base">Create Account</Text>
+              <Text className="text-on-primary font-bold text-base">Create Account</Text>
             )}
           </Pressable>
         </View>
 
-        <View className="items-center mt-6">
-          <Text className="text-sm text-gray-500 dark:text-gray-400">Already have an account? </Text>
+        <View className="flex-row justify-center items-center gap-1 mt-8">
+          <Text className="text-sm text-on-surface-variant">Already a member?</Text>
           <Link href="/(auth)/login" replace>
-            <Text className="text-sm font-semibold text-brand">Sign in</Text>
+            <Text className="text-sm font-bold text-primary">Log In</Text>
           </Link>
         </View>
       </ScrollView>

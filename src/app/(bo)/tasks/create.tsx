@@ -10,6 +10,21 @@ import type { TaskPriority } from '@/types/api';
 
 const PRIORITIES: TaskPriority[] = ['low', 'medium', 'high', 'urgent'];
 
+const PRIORITY_COLORS: Record<TaskPriority, string> = {
+  low:    'bg-success-container',
+  medium: 'bg-secondary-container',
+  high:   'bg-warning-container',
+  urgent: 'bg-error-container',
+};
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <Text className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-2">
+      {children}
+    </Text>
+  );
+}
+
 export default function BOTaskCreateScreen() {
   const { id: editId } = useLocalSearchParams<{ id?: string }>();
   const isEditing = !!editId;
@@ -26,7 +41,6 @@ export default function BOTaskCreateScreen() {
   const [deadline, setDeadline] = useState('');
   const [selectedStaff, setSelectedStaff] = useState<string[]>([]);
 
-  // Load existing task if editing
   const editQuery = useQuery({
     queryKey: ['task', editId],
     queryFn: () => tasksApi.get(editId!),
@@ -50,7 +64,6 @@ export default function BOTaskCreateScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editQuery.data?.id]);
 
-  // Staff list for assignment
   const { data: staffData } = useQuery({
     queryKey: ['staff'],
     queryFn: () => staffApi.list(),
@@ -74,13 +87,9 @@ export default function BOTaskCreateScreen() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tasks'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
-      Alert.alert('Success', 'Task created', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      router.back();
     },
-    onError: (e) => {
-      Alert.alert('Error', e instanceof ApiError ? e.message : 'Failed to create task');
-    },
+    onError: (e) => Alert.alert('Error', e instanceof ApiError ? e.message : 'Failed to create task'),
   });
 
   const updateMutation = useMutation({
@@ -99,57 +108,39 @@ export default function BOTaskCreateScreen() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tasks'] });
       qc.invalidateQueries({ queryKey: ['task', editId] });
-      Alert.alert('Success', 'Task updated', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      router.back();
     },
-    onError: (e) => {
-      Alert.alert('Error', e instanceof ApiError ? e.message : 'Failed to update task');
-    },
+    onError: (e) => Alert.alert('Error', e instanceof ApiError ? e.message : 'Failed to update task'),
   });
 
   function handleSubmit() {
-    if (!title.trim()) {
-      Alert.alert('Error', 'Title is required');
-      return;
-    }
-    if (isEditing) {
-      updateMutation.mutate();
-    } else {
-      createMutation.mutate();
-    }
+    if (!title.trim()) { Alert.alert('Error', 'Title is required'); return; }
+    isEditing ? updateMutation.mutate() : createMutation.mutate();
   }
 
   const isMutating = createMutation.isPending || updateMutation.isPending;
 
-  const inputCls =
-    'w-full border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-base text-gray-900 dark:text-white bg-white dark:bg-gray-900';
-
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-      <View className="flex-1 bg-gray-50 dark:bg-black">
-        {/* Header */}
-        <View className="bg-white dark:bg-gray-900 px-5 pt-14 pb-4 border-b border-gray-100 dark:border-gray-800">
-          <View className="flex-row items-center">
-            <Pressable onPress={() => router.back()} className="mr-3 active:opacity-60">
-              <Text className="text-brand text-base">← Back</Text>
-            </Pressable>
-            <Text className="text-lg font-bold text-gray-900 dark:text-white">
-              {isEditing ? 'Edit Task' : 'Create Task'}
-            </Text>
-          </View>
+      <View className="flex-1 bg-surface">
+        {/* Glass Header */}
+        <View className="glass-effect px-5 pt-14 pb-4 flex-row items-center">
+          <Pressable onPress={() => router.back()} className="mr-3 active:opacity-60">
+            <Text className="text-primary font-semibold">← Back</Text>
+          </Pressable>
+          <Text className="text-xl font-extrabold text-on-surface tracking-tight flex-1">
+            {isEditing ? 'Edit Task' : 'Create Task'}
+          </Text>
         </View>
 
-        <ScrollView className="flex-1" contentContainerClassName="px-4 py-4 gap-4">
+        <ScrollView className="flex-1" contentContainerClassName="px-4 py-5 gap-5">
           {/* Title */}
           <View>
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Title *
-            </Text>
+            <FieldLabel>Title *</FieldLabel>
             <TextInput
-              className={inputCls}
+              className="w-full h-14 px-4 bg-surface-container-high rounded-xl text-on-surface text-base"
               placeholder="Task title"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#737685"
               value={title}
               onChangeText={setTitle}
             />
@@ -157,13 +148,12 @@ export default function BOTaskCreateScreen() {
 
           {/* Description */}
           <View>
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Description
-            </Text>
+            <FieldLabel>Description</FieldLabel>
             <TextInput
-              className={`${inputCls} h-20`}
+              className="w-full px-4 py-3 bg-surface-container-high rounded-xl text-on-surface text-base"
+              style={{ height: 88 }}
               placeholder="Task description"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#737685"
               value={description}
               onChangeText={setDescription}
               multiline
@@ -173,94 +163,85 @@ export default function BOTaskCreateScreen() {
 
           {/* Priority */}
           <View>
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Priority
-            </Text>
+            <FieldLabel>Priority</FieldLabel>
             <View className="flex-row gap-2">
-              {PRIORITIES.map((p) => (
-                <Pressable
-                  key={p}
-                  onPress={() => setPriority(priority === p ? undefined : p)}
-                  className={`flex-1 py-2 rounded-xl items-center border ${
-                    priority === p
-                      ? 'bg-brand border-brand'
-                      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900'
-                  }`}
-                >
-                  <Text
-                    className={`text-xs font-semibold capitalize ${
-                      priority === p ? 'text-white' : 'text-gray-600 dark:text-gray-300'
+              {PRIORITIES.map((p) => {
+                const active = priority === p;
+                return (
+                  <Pressable
+                    key={p}
+                    onPress={() => setPriority(active ? undefined : p)}
+                    className={`flex-1 py-2.5 rounded-xl items-center ${
+                      active ? `kinetic-gradient` : PRIORITY_COLORS[p]
                     }`}
                   >
-                    {p}
-                  </Text>
-                </Pressable>
-              ))}
+                    <Text className={`text-xs font-bold capitalize ${active ? 'text-on-primary' : 'text-on-surface'}`}>
+                      {p}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
           </View>
 
           {/* Location */}
           <View>
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Location
-            </Text>
-            <TextInput
-              className={`${inputCls} mb-2`}
-              placeholder="Address / location name"
-              placeholderTextColor="#9ca3af"
-              value={locationName}
-              onChangeText={setLocationName}
-            />
-            <View className="flex-row gap-2 mb-2">
+            <FieldLabel>Location</FieldLabel>
+            <View className="gap-2">
               <TextInput
-                className={`${inputCls} flex-1`}
-                placeholder="Latitude"
-                placeholderTextColor="#9ca3af"
-                value={locationLat}
-                onChangeText={setLocationLat}
-                keyboardType="decimal-pad"
+                className="w-full h-12 px-4 bg-surface-container-high rounded-xl text-on-surface text-base"
+                placeholder="Address / location name"
+                placeholderTextColor="#737685"
+                value={locationName}
+                onChangeText={setLocationName}
               />
+              <View className="flex-row gap-2">
+                <TextInput
+                  className="flex-1 h-12 px-4 bg-surface-container-high rounded-xl text-on-surface text-sm"
+                  placeholder="Latitude"
+                  placeholderTextColor="#737685"
+                  value={locationLat}
+                  onChangeText={setLocationLat}
+                  keyboardType="decimal-pad"
+                />
+                <TextInput
+                  className="flex-1 h-12 px-4 bg-surface-container-high rounded-xl text-on-surface text-sm"
+                  placeholder="Longitude"
+                  placeholderTextColor="#737685"
+                  value={locationLng}
+                  onChangeText={setLocationLng}
+                  keyboardType="decimal-pad"
+                />
+              </View>
               <TextInput
-                className={`${inputCls} flex-1`}
-                placeholder="Longitude"
-                placeholderTextColor="#9ca3af"
-                value={locationLng}
-                onChangeText={setLocationLng}
-                keyboardType="decimal-pad"
+                className="w-full h-12 px-4 bg-surface-container-high rounded-xl text-on-surface text-base"
+                placeholder="GPS radius (meters)"
+                placeholderTextColor="#737685"
+                value={locationRadius}
+                onChangeText={setLocationRadius}
+                keyboardType="number-pad"
               />
             </View>
-            <TextInput
-              className={inputCls}
-              placeholder="GPS radius (meters)"
-              placeholderTextColor="#9ca3af"
-              value={locationRadius}
-              onChangeText={setLocationRadius}
-              keyboardType="number-pad"
-            />
           </View>
 
-          {/* Schedule */}
+          {/* Schedule & Deadline */}
           <View>
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Scheduled At (YYYY-MM-DDTHH:MM)
-            </Text>
+            <FieldLabel>Scheduled At</FieldLabel>
             <TextInput
-              className={inputCls}
+              className="w-full h-12 px-4 bg-surface-container-high rounded-xl text-on-surface text-base"
               placeholder="2026-03-20T08:00"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#737685"
               value={scheduledAt}
               onChangeText={setScheduledAt}
             />
           </View>
 
           <View>
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Deadline (YYYY-MM-DDTHH:MM)
-            </Text>
+            <FieldLabel>Deadline</FieldLabel>
             <TextInput
-              className={inputCls}
+              className="w-full h-12 px-4 bg-surface-container-high rounded-xl text-on-surface text-base"
               placeholder="2026-03-20T17:00"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#737685"
               value={deadline}
               onChangeText={setDeadline}
             />
@@ -269,9 +250,7 @@ export default function BOTaskCreateScreen() {
           {/* Assign staff (create only) */}
           {!isEditing && staffList.length > 0 && (
             <View>
-              <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                Assign Staff
-              </Text>
+              <FieldLabel>Assign Staff</FieldLabel>
               <View className="gap-2">
                 {staffList.map((s) => {
                   const selected = selectedStaff.includes(s.id);
@@ -283,24 +262,24 @@ export default function BOTaskCreateScreen() {
                           selected ? prev.filter((x) => x !== s.id) : [...prev, s.id],
                         )
                       }
-                      className={`flex-row items-center px-4 py-3 rounded-xl border ${
-                        selected
-                          ? 'border-brand bg-blue-50 dark:bg-blue-950'
-                          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900'
+                      className={`flex-row items-center px-4 py-3 rounded-xl ${
+                        selected ? 'bg-primary' : 'bg-surface-container-high'
                       }`}
                     >
                       <View
-                        className={`w-5 h-5 rounded-full border-2 mr-3 items-center justify-center ${
-                          selected ? 'border-brand bg-brand' : 'border-gray-300'
+                        className={`w-5 h-5 rounded-full mr-3 items-center justify-center ${
+                          selected ? 'bg-on-primary' : 'bg-surface-container-highest'
                         }`}
                       >
-                        {selected && <Text className="text-white text-xs">✓</Text>}
+                        {selected && <Text className="text-primary text-xs font-bold">✓</Text>}
                       </View>
                       <View>
-                        <Text className="text-sm font-medium text-gray-900 dark:text-white">
+                        <Text className={`text-sm font-semibold ${selected ? 'text-on-primary' : 'text-on-surface'}`}>
                           {s.full_name}
                         </Text>
-                        <Text className="text-xs text-gray-400">{s.email}</Text>
+                        <Text className={`text-xs ${selected ? 'text-on-primary' : 'text-on-surface-variant'}`} style={{ opacity: 0.7 }}>
+                          {s.email}
+                        </Text>
                       </View>
                     </Pressable>
                   );
@@ -313,16 +292,18 @@ export default function BOTaskCreateScreen() {
           <Pressable
             onPress={handleSubmit}
             disabled={isMutating}
-            className="bg-brand rounded-2xl py-4 items-center mt-2 active:opacity-80 disabled:opacity-50"
+            className="kinetic-gradient rounded-2xl py-4 items-center mt-2 active:opacity-80 disabled:opacity-50"
           >
             {isMutating ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color="#ffffff" />
             ) : (
-              <Text className="text-white font-semibold text-base">
+              <Text className="text-on-primary font-bold text-base">
                 {isEditing ? 'Save Changes' : 'Create Task'}
               </Text>
             )}
           </Pressable>
+
+          <View className="h-4" />
         </ScrollView>
       </View>
     </KeyboardAvoidingView>

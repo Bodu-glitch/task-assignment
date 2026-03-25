@@ -8,17 +8,32 @@ import { ErrorView } from '@/components/ui/ErrorView';
 import { useAuth } from '@/context/auth';
 import type { TaskStatus } from '@/types/api';
 
-const STAT_CARDS: { key: keyof ReturnType<typeof emptyStats>; label: string; color: string }[] = [
-  { key: 'pending', label: 'Pending', color: 'bg-yellow-100 dark:bg-yellow-900' },
-  { key: 'in_progress', label: 'In Progress', color: 'bg-blue-100 dark:bg-blue-900' },
-  { key: 'completed', label: 'Completed', color: 'bg-green-100 dark:bg-green-900' },
-  { key: 'rejected', label: 'Rejected', color: 'bg-red-100 dark:bg-red-900' },
-  { key: 'cancelled', label: 'Cancelled', color: 'bg-gray-100 dark:bg-gray-800' },
-  { key: 'overdue', label: 'Overdue', color: 'bg-orange-100 dark:bg-orange-900' },
+type StatKey = keyof ReturnType<typeof emptyStats>;
+
+const STAT_CARDS: {
+  key: StatKey;
+  label: string;
+  pillColor: string;
+  status?: TaskStatus;
+}[] = [
+  { key: 'todo',        label: 'Pending',     pillColor: '#f59e0b', status: 'todo' },
+  { key: 'in_progress', label: 'In Progress', pillColor: '#003d9b', status: 'in_progress' },
+  { key: 'done',        label: 'Done',        pillColor: '#10b981', status: 'done' },
+  { key: 'rejected',    label: 'Rejected',    pillColor: '#ba1a1a', status: 'rejected' },
+  { key: 'overdue',     label: 'Overdue',     pillColor: '#f97316' },
+  { key: 'cancelled',   label: 'Cancelled',   pillColor: '#94a3b8', status: 'cancelled' },
+];
+
+const QUICK_ACTIONS = [
+  { label: 'Create Task', icon: '+',  onPress: () => router.push('/(bo)/tasks/create'), primary: true },
+  { label: 'All Tasks',   icon: '≡',  onPress: () => router.push('/(bo)/tasks/') },
+  { label: 'Employees',   icon: '👥', onPress: () => router.push('/(bo)/employees') },
+  { label: 'Audit Log',   icon: '📋', onPress: () => router.push('/(bo)/audit-log') },
+  { label: 'Overdue',     icon: '⚠', onPress: () => router.push('/(bo)/rejected-overdue') },
 ];
 
 function emptyStats() {
-  return { pending: 0, in_progress: 0, completed: 0, cancelled: 0, rejected: 0, overdue: 0 };
+  return { todo: 0, in_progress: 0, done: 0, cancelled: 0, rejected: 0, overdue: 0 };
 }
 
 export default function BODashboardScreen() {
@@ -35,84 +50,86 @@ export default function BODashboardScreen() {
 
   return (
     <ScrollView
-      className="flex-1 bg-gray-50 dark:bg-black"
+      className="flex-1 bg-surface"
       refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
     >
-      {/* Header */}
-      <View className="bg-white dark:bg-gray-900 px-5 pt-14 pb-5 border-b border-gray-100 dark:border-gray-800">
-        <View className="flex-row items-center justify-between">
-          <View>
-            <Text className="text-xs text-gray-500">Welcome back,</Text>
-            <Text className="text-lg font-bold text-gray-900 dark:text-white">
-              {user?.full_name ?? 'Business Owner'}
-            </Text>
+      {/* Glass Header */}
+      <View className="glass-effect px-5 pt-14 pb-4 flex-row items-center justify-between">
+        <View>
+          <Text className="text-[10px] font-bold uppercase tracking-widest text-primary" style={{ opacity: 0.7 }}>
+            Welcome Back
+          </Text>
+          <Text className="text-lg font-extrabold text-on-surface tracking-tight">
+            {user?.full_name ?? 'Business Owner'}
+          </Text>
+        </View>
+        <Pressable onPress={logout} className="w-10 h-10 items-center justify-center rounded-xl active:opacity-60">
+          <Text className="text-on-surface-variant text-lg">⎋</Text>
+        </Pressable>
+      </View>
+
+      <View className="px-5 pt-8 gap-8 pb-10">
+        {/* Stats Section */}
+        <View>
+          <View className="flex-row items-end justify-between mb-5">
+            <View>
+              <Text className="text-2xl font-extrabold text-on-surface tracking-tight">Task Overview</Text>
+              <Text className="text-sm text-on-surface-variant mt-0.5">System activity summary</Text>
+            </View>
+            <View className="px-3 py-1 rounded-full bg-surface-container-high">
+              <Text className="text-xs font-bold text-primary uppercase tracking-widest">Today</Text>
+            </View>
           </View>
-          <Pressable onPress={logout} className="active:opacity-60">
-            <Text className="text-sm text-red-500">Logout</Text>
-          </Pressable>
-        </View>
-      </View>
 
-      {/* Stats */}
-      <View className="px-4 pt-5">
-        <Text className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-3">
-          Task Overview
-        </Text>
-        <View className="flex-row flex-wrap gap-3">
-          {STAT_CARDS.map(({ key, label, color }) => (
-            <Pressable
-              key={key}
-              className={`flex-1 min-w-[44%] ${color} rounded-2xl p-4 active:opacity-75`}
-              onPress={() =>
-                key !== 'overdue'
-                  ? router.push({ pathname: '/(bo)/tasks', params: { status: key } })
-                  : undefined
-              }
-            >
-              <Text className="text-3xl font-bold text-gray-900 dark:text-white">
-                {stats[key]}
-              </Text>
-              <Text className="text-sm text-gray-600 dark:text-gray-300 mt-1">{label}</Text>
-            </Pressable>
-          ))}
+          <View className="flex-row flex-wrap gap-4">
+            {STAT_CARDS.map(({ key, label, pillColor, status }) => (
+              <Pressable
+                key={key}
+                onPress={() => status ? router.push({ pathname: '/(bo)/tasks', params: { status } }) : undefined}
+                className="bg-surface-container-lowest rounded-xl p-5 active:opacity-75 overflow-hidden"
+                style={{ width: '47%', minHeight: 120 }}
+              >
+                {/* Left color pill */}
+                <View
+                  className="absolute left-0 top-0 bottom-0"
+                  style={{ width: 4, backgroundColor: pillColor }}
+                />
+                <View className="flex-1 justify-between">
+                  <Text className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-3">
+                    {label}
+                  </Text>
+                  <Text className="text-4xl font-extrabold text-on-surface">
+                    {stats[key]}
+                  </Text>
+                </View>
+              </Pressable>
+            ))}
+          </View>
         </View>
-      </View>
 
-      {/* Quick actions */}
-      <View className="px-4 pt-6 pb-8 gap-3">
-        <Text className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-1">
-          Quick Actions
-        </Text>
-        <Pressable
-          onPress={() => router.push('/(bo)/tasks/create')}
-          className="bg-brand rounded-2xl px-5 py-4 active:opacity-80"
-        >
-          <Text className="text-white font-semibold text-base">+ Create Task</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => router.push('/(bo)/tasks/')}
-          className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl px-5 py-4 active:opacity-70"
-        >
-          <Text className="text-gray-800 dark:text-white font-medium">All Tasks</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => router.push('/(bo)/employees')}
-          className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl px-5 py-4 active:opacity-70"
-        >
-          <Text className="text-gray-800 dark:text-white font-medium">Manage Employees</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => router.push('/(bo)/audit-log')}
-          className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl px-5 py-4 active:opacity-70"
-        >
-          <Text className="text-gray-800 dark:text-white font-medium">Audit Log</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => router.push('/(bo)/rejected-overdue')}
-          className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl px-5 py-4 active:opacity-70"
-        >
-          <Text className="text-gray-800 dark:text-white font-medium">Rejected / Overdue</Text>
-        </Pressable>
+        {/* Quick Actions */}
+        <View>
+          <Text className="text-lg font-bold text-on-surface mb-4">Quick Actions</Text>
+          <View className="flex-row flex-wrap gap-3">
+            {QUICK_ACTIONS.map(({ label, icon, onPress, primary }) => (
+              <Pressable
+                key={label}
+                onPress={onPress}
+                className="items-center gap-2 active:opacity-80"
+                style={{ width: '18%' }}
+              >
+                <View
+                  className={`w-14 h-14 rounded-2xl items-center justify-center ${primary ? 'kinetic-gradient' : 'bg-surface-container-high'}`}
+                >
+                  <Text className={`text-xl ${primary ? 'text-on-primary' : 'text-primary'}`}>{icon}</Text>
+                </View>
+                <Text className="text-[10px] font-bold uppercase tracking-tight text-on-surface text-center">
+                  {label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
       </View>
     </ScrollView>
   );

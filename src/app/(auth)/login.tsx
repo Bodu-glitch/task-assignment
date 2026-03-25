@@ -1,14 +1,29 @@
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
 import { View, Text, TextInput, Pressable, ScrollView, Link } from '@/tw';
 import { useAuth } from '@/context/auth';
 import { ApiError } from '@/lib/api/client';
 
 export default function LoginScreen() {
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  async function handleGoogleLogin() {
+    setGoogleLoading(true);
+    try {
+      await loginWithGoogle();
+    } catch (e) {
+      const message = e instanceof ApiError ? e.message : 'Google sign-in failed. Please try again.';
+      Alert.alert('Google Sign-In Failed', message);
+    } finally {
+      setGoogleLoading(false);
+    }
+  }
 
   async function handleLogin() {
     if (!email.trim() || !password) {
@@ -18,6 +33,7 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await login(email.trim(), password);
+      router.replace('/');
     } catch (e) {
       const message =
         e instanceof ApiError
@@ -37,28 +53,34 @@ export default function LoginScreen() {
       style={{ flex: 1 }}
     >
       <ScrollView
-        contentContainerClassName="flex-1 justify-center px-6 bg-white dark:bg-black"
+        className="flex-1 bg-surface"
+        contentContainerClassName="flex-grow justify-center px-6 py-12"
         keyboardShouldPersistTaps="handled"
       >
-        {/* Logo / title */}
-        <View className="mb-10 items-center">
-          <View className="w-16 h-16 rounded-2xl bg-brand items-center justify-center mb-4">
-            <Text className="text-white text-3xl font-bold">T</Text>
+        {/* Branding Header */}
+        <View className="items-center mb-12">
+          <View className="w-16 h-16 rounded-xl bg-primary items-center justify-center mb-6 shadow-sm">
+            <Text className="text-on-primary text-3xl font-black">T</Text>
           </View>
-          <Text className="text-2xl font-bold text-gray-900 dark:text-white">Task Management</Text>
-          <Text className="text-sm text-gray-500 mt-1">Sign in to continue</Text>
+          <Text className="text-3xl font-extrabold text-on-surface tracking-tight">
+            Executive Kinetic
+          </Text>
+          <Text className="text-sm text-on-surface-variant mt-2">
+            Access your secure professional workspace
+          </Text>
         </View>
 
         {/* Form */}
-        <View className="gap-4">
-          <View>
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Email
+        <View className="gap-6">
+          {/* Email */}
+          <View className="gap-2">
+            <Text className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant px-1">
+              Professional Email
             </Text>
             <TextInput
-              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-base text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900"
-              placeholder="you@example.com"
-              placeholderTextColor="#9ca3af"
+              className="w-full h-14 px-4 bg-surface-container-high rounded-xl text-on-surface text-base"
+              placeholder="name@company.com"
+              placeholderTextColor="#737685"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
@@ -68,14 +90,20 @@ export default function LoginScreen() {
             />
           </View>
 
-          <View>
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Password
-            </Text>
+          {/* Password */}
+          <View className="gap-2">
+            <View className="flex-row justify-between items-end px-1">
+              <Text className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+                Security Code
+              </Text>
+              <Link href="/(auth)/login">
+                <Text className="text-xs font-semibold text-primary">Forgot?</Text>
+              </Link>
+            </View>
             <TextInput
-              className="w-full border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-base text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-900"
+              className="w-full h-14 px-4 bg-surface-container-high rounded-xl text-on-surface text-base"
               placeholder="••••••••"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#737685"
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -86,23 +114,54 @@ export default function LoginScreen() {
             />
           </View>
 
-          <Pressable
-            onPress={handleLogin}
-            disabled={loading}
-            className="w-full bg-brand rounded-xl py-3.5 items-center justify-center mt-2 active:opacity-80 disabled:opacity-50"
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text className="text-white font-semibold text-base">Sign In</Text>
-            )}
-          </Pressable>
+          {/* Actions */}
+          <View className="gap-4 pt-2">
+            <Pressable
+              onPress={handleLogin}
+              disabled={loading}
+              className="kinetic-gradient w-full h-14 rounded-xl items-center justify-center shadow-sm active:opacity-90 disabled:opacity-50"
+            >
+              {loading ? (
+                <ActivityIndicator color="#ffffff" />
+              ) : (
+                <Text className="text-on-primary font-bold text-base">Sign In</Text>
+              )}
+            </Pressable>
+
+            {/* Divider */}
+            <View className="flex-row items-center py-2 gap-4">
+              <View className="flex-1 h-px bg-outline-variant" style={{ opacity: 0.3 }} />
+              <Text className="text-[10px] font-bold uppercase tracking-widest text-outline">
+                or continue with
+              </Text>
+              <View className="flex-1 h-px bg-outline-variant" style={{ opacity: 0.3 }} />
+            </View>
+
+            {/* Google */}
+            <Pressable
+              onPress={handleGoogleLogin}
+              disabled={googleLoading || loading}
+              className="w-full h-14 bg-surface-container-high flex-row items-center justify-center gap-3 rounded-xl active:opacity-80 disabled:opacity-50"
+            >
+              {googleLoading ? (
+                <ActivityIndicator color="#4285F4" />
+              ) : (
+                <>
+                  <View>
+                    <Text className="text-base font-bold" style={{ color: '#4285F4' }}>G</Text>
+                  </View>
+                  <Text className="font-semibold text-on-surface text-base">Google</Text>
+                </>
+              )}
+            </Pressable>
+          </View>
         </View>
 
-        <View className="items-center mt-6">
-          <Text className="text-sm text-gray-500 dark:text-gray-400">Don't have an account? </Text>
+        {/* Footer link */}
+        <View className="items-center mt-8 flex-row justify-center gap-1">
+          <Text className="text-sm text-on-surface-variant">New to the Kinetic platform?</Text>
           <Link href="/(auth)/register">
-            <Text className="text-sm font-semibold text-brand">Create one</Text>
+            <Text className="text-sm font-bold text-primary">Register</Text>
           </Link>
         </View>
       </ScrollView>

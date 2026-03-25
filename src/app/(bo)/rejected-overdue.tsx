@@ -7,54 +7,49 @@ import { tasksApi } from '@/lib/api/tasks';
 import { StatusBadge, PriorityBadge } from '@/components/ui/StatusBadge';
 import { LoadingScreen } from '@/components/ui/LoadingScreen';
 import { ErrorView } from '@/components/ui/ErrorView';
-import type { Task, TaskStatus } from '@/types/api';
+import type { Task } from '@/types/api';
 
-const TABS: { label: string; status: TaskStatus }[] = [
-  { label: 'Rejected', status: 'rejected' },
-  { label: 'Overdue', status: 'pending' }, // we'll filter overdue client-side based on deadline
-];
 
 function TaskCard({ task, route }: { task: Task; route: '/(bo)/tasks/[id]' | '/(ot)/tasks/[id]' }) {
   const isOverdue =
     task.deadline &&
     new Date(task.deadline) < new Date() &&
-    (task.status === 'pending' || task.status === 'in_progress');
+    (task.status === 'todo' || task.status === 'in_progress');
 
   return (
     <Pressable
       onPress={() => router.push({ pathname: route, params: { id: task.id } })}
-      className="bg-white dark:bg-gray-900 rounded-2xl p-4 mb-3 border border-gray-100 dark:border-gray-800 active:opacity-70"
+      className="bg-surface-container-lowest rounded-xl p-5 mb-3 overflow-hidden active:opacity-70"
     >
-      <View className="flex-row items-start justify-between mb-2">
-        <Text className="text-base font-semibold text-gray-900 dark:text-white flex-1 mr-2" numberOfLines={1}>
+      <View className={`absolute left-0 top-0 bottom-0 w-1 ${isOverdue ? 'bg-warning' : 'bg-error'}`} />
+      <View className="flex-row items-start justify-between mb-3">
+        <Text className="text-base font-bold text-on-surface flex-1 mr-3" numberOfLines={2}>
           {task.title}
         </Text>
         <StatusBadge status={task.status} />
       </View>
 
-      {task.priority && (
-        <View className="mb-2">
-          <PriorityBadge priority={task.priority} />
-        </View>
-      )}
+      <View className="flex-row flex-wrap gap-2 mb-2">
+        {task.priority && <PriorityBadge priority={task.priority} />}
+        {isOverdue && (
+          <View className="self-start px-2.5 py-1 rounded-full bg-warning-container">
+            <Text className="text-[10px] font-bold text-on-warning-container">⚠ OVERDUE</Text>
+          </View>
+        )}
+      </View>
 
-      {isOverdue && (
-        <View className="bg-orange-100 dark:bg-orange-950 rounded-lg px-2.5 py-1 self-start mb-2">
-          <Text className="text-xs font-semibold text-orange-600 dark:text-orange-400">⚠️ Overdue</Text>
-        </View>
-      )}
-
-      {task.deadline && (
-        <Text className="text-xs text-gray-400">
-          Deadline: {new Date(task.deadline).toLocaleString('vi-VN')}
-        </Text>
-      )}
-
-      {task.assignees.length > 0 && (
-        <Text className="text-xs text-gray-400 mt-1">
-          👥 {task.assignees.map((a) => a.full_name).join(', ')}
-        </Text>
-      )}
+      <View className="gap-1">
+        {task.deadline && (
+          <Text className="text-xs text-on-surface-variant">
+            Deadline: {new Date(task.deadline).toLocaleString('vi-VN')}
+          </Text>
+        )}
+        {(task.assignees?.length ?? 0) > 0 && (
+          <Text className="text-xs text-on-surface-variant" numberOfLines={1}>
+            👥 {task.assignees!.map((a) => a.full_name).join(', ')}
+          </Text>
+        )}
+      </View>
     </Pressable>
   );
 }
@@ -73,7 +68,7 @@ export default function BOrejectedOverdueScreen() {
     queryFn: async () => {
       const now = new Date().toISOString();
       const [pending, inProgress] = await Promise.all([
-        tasksApi.list({ status: 'pending', to: now, limit: 50 }),
+        tasksApi.list({ status: 'todo', to: now, limit: 50 }),
         tasksApi.list({ status: 'in_progress', to: now, limit: 50 }),
       ]);
       return [...(pending.data ?? []), ...(inProgress.data ?? [])].filter(
@@ -89,14 +84,14 @@ export default function BOrejectedOverdueScreen() {
   if (currentQuery.isError) return <ErrorView onRetry={currentQuery.refetch} />;
 
   return (
-    <View className="flex-1 bg-gray-50 dark:bg-black">
-      {/* Header */}
-      <View className="bg-white dark:bg-gray-900 px-5 pt-14 pb-4 border-b border-gray-100 dark:border-gray-800">
-        <View className="flex-row items-center mb-4">
-          <Pressable onPress={() => router.back()} className="mr-3 active:opacity-60">
-            <Text className="text-brand text-base">← Back</Text>
+    <View className="flex-1 bg-surface-container-low">
+      {/* Glass Header */}
+      <View className="glass-effect px-5 pt-14 pb-4">
+        <View className="flex-row items-center gap-3 mb-4">
+          <Pressable onPress={() => router.back()} className="active:opacity-60">
+            <Text className="text-primary font-semibold">← Back</Text>
           </Pressable>
-          <Text className="text-lg font-bold text-gray-900 dark:text-white">
+          <Text className="text-xl font-extrabold text-on-surface tracking-tight flex-1">
             Rejected / Overdue
           </Text>
         </View>
@@ -105,16 +100,12 @@ export default function BOrejectedOverdueScreen() {
             <Pressable
               key={t}
               onPress={() => setTab(t)}
-              className={`flex-1 py-2 rounded-xl items-center ${
-                tab === t ? 'bg-brand' : 'bg-gray-100 dark:bg-gray-800'
+              className={`flex-1 py-2.5 rounded-xl items-center ${
+                tab === t ? 'kinetic-gradient' : 'bg-surface-container-highest'
               }`}
             >
-              <Text
-                className={`text-sm font-semibold capitalize ${
-                  tab === t ? 'text-white' : 'text-gray-600 dark:text-gray-300'
-                }`}
-              >
-                {t} ({tab === t ? items.length : '?'})
+              <Text className={`text-xs font-bold uppercase ${tab === t ? 'text-on-primary' : 'text-on-surface-variant'}`}>
+                {t} ({tab === t ? items.length : '…'})
               </Text>
             </Pressable>
           ))}
@@ -125,7 +116,7 @@ export default function BOrejectedOverdueScreen() {
         data={items}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <TaskCard task={item} route="/(bo)/tasks/[id]" />}
-        contentContainerStyle={{ paddingTop: 12, paddingHorizontal: 16, paddingBottom: 24 }}
+        contentContainerStyle={{ paddingTop: 16, paddingHorizontal: 16, paddingBottom: 32 }}
         refreshControl={
           <RefreshControl
             refreshing={currentQuery.isRefetching}
@@ -134,7 +125,7 @@ export default function BOrejectedOverdueScreen() {
         }
         ListEmptyComponent={
           <View className="py-16 items-center">
-            <Text className="text-gray-400">No {tab} tasks</Text>
+            <Text className="text-on-surface-variant text-sm">No {tab} tasks</Text>
           </View>
         }
       />

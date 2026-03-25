@@ -7,15 +7,16 @@ export interface UserProfile {
   email: string;
   full_name: string;
   role: UserRole;
-  tenant_id: string;
+  tenant_id: string | null;
   phone?: string;
   is_active: boolean;
   created_at: string;
+  tenants?: TenantOption[];
 }
 
 // ─── Tasks ───────────────────────────────────────────────────────────────────
 
-export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'rejected';
+export type TaskStatus = 'todo' | 'in_progress' | 'done' | 'cancelled' | 'rejected';
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 
 export interface TaskAssignee {
@@ -53,9 +54,9 @@ export interface Task {
 }
 
 export interface DashboardStats {
-  pending: number;
+  todo: number;
   in_progress: number;
-  completed: number;
+  done: number;
   cancelled: number;
   rejected: number;
   overdue: number;
@@ -173,30 +174,30 @@ export interface RegisterInput {
 
 export interface RegisterResponse {
   access_token: string;
+  refresh_token: string;
   user: UserProfile;
   tenant: TenantInfo;
 }
 
 export interface LoginSingleResponse {
   access_token: string;
+  refresh_token: string;
   user: UserProfile;
   tenants: TenantOption[];
 }
 export interface LoginMultiResponse {
+  access_token: string;
+  refresh_token: string;
   user: { id: string; email: string; full_name: string };
   tenants: TenantOption[];
   requires_tenant_selection: true;
 }
 export interface LoginSuperadminResponse {
   access_token: string;
+  refresh_token: string;
   user: UserProfile;
 }
 export type LoginResponse = LoginSingleResponse | LoginMultiResponse | LoginSuperadminResponse;
-
-export interface SelectTenantResponse {
-  access_token: string;
-  user: UserProfile;
-}
 
 // ─── In-app invitations (received by the logged-in user) ─────────────────────
 

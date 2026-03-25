@@ -13,8 +13,10 @@ import { ApiError } from '@/lib/api/client';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <View className="bg-white dark:bg-gray-900 rounded-2xl p-4 mb-3 border border-gray-100 dark:border-gray-800">
-      <Text className="text-xs font-semibold text-gray-400 uppercase mb-3">{title}</Text>
+    <View className="bg-surface-container-lowest rounded-xl p-5 mb-4">
+      <Text className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-4">
+        {title}
+      </Text>
       {children}
     </View>
   );
@@ -23,9 +25,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function InfoRow({ label, value }: { label: string; value?: string | null }) {
   if (!value) return null;
   return (
-    <View className="flex-row items-start mb-2">
-      <Text className="text-sm text-gray-500 w-28">{label}</Text>
-      <Text className="text-sm text-gray-900 dark:text-white flex-1">{value}</Text>
+    <View className="flex-row items-start mb-3">
+      <Text className="text-xs font-semibold text-on-surface-variant w-24">{label}</Text>
+      <Text className="text-sm text-on-surface flex-1">{value}</Text>
     </View>
   );
 }
@@ -90,57 +92,61 @@ export default function BOTaskDetailScreen() {
   if (isError || !data) return <ErrorView onRetry={refetch} />;
 
   const task = data;
-  const assignedIds = task.assignees.map((a) => a.id);
+  const assignedIds = (task.assignees ?? []).map((a) => a.id);
   const unassignedStaff = (staffData ?? []).filter((s) => !assignedIds.includes(s.id));
-  const canModify = task.status !== 'cancelled' && task.status !== 'rejected' && task.status !== 'completed';
+  const canModify = task.status !== 'cancelled' && task.status !== 'rejected' && task.status !== 'done';
 
   return (
-    <View className="flex-1 bg-gray-50 dark:bg-black">
-      {/* Header */}
-      <View className="bg-white dark:bg-gray-900 px-5 pt-14 pb-4 border-b border-gray-100 dark:border-gray-800">
+    <View className="flex-1 bg-surface">
+      {/* Glass Header */}
+      <View className="glass-effect px-5 pt-14 pb-4">
         <View className="flex-row items-center gap-3">
           <Pressable onPress={() => router.back()} className="active:opacity-60">
-            <Text className="text-brand text-base">← Back</Text>
+            <Text className="text-primary font-semibold">← Back</Text>
           </Pressable>
-          <Text className="text-lg font-bold text-gray-900 dark:text-white flex-1" numberOfLines={1}>
-            {task.title}
+          <Text className="text-lg font-extrabold text-on-surface tracking-tight flex-1" numberOfLines={1}>
+            Task Details
           </Text>
+          <View className="flex-row gap-2">
+            <StatusBadge status={task.status} />
+            {task.priority && <PriorityBadge priority={task.priority} />}
+          </View>
           {canModify && (
             <Pressable
-              onPress={() =>
-                router.push({ pathname: '/(bo)/tasks/create', params: { id: task.id } })
-              }
+              onPress={() => router.push({ pathname: '/(bo)/tasks/create', params: { id: task.id } })}
               className="active:opacity-60"
             >
-              <Text className="text-brand text-sm">Edit</Text>
+              <Text className="text-primary font-semibold text-sm">Edit</Text>
             </Pressable>
           )}
         </View>
       </View>
 
       <ScrollView
-        className="flex-1 px-4 pt-4"
+        className="flex-1 px-4 pt-5"
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
       >
-        {/* Status & Priority */}
-        <Section title="Status">
-          <View className="flex-row gap-2 flex-wrap">
-            <StatusBadge status={task.status} />
-            {task.priority && <PriorityBadge priority={task.priority} />}
-          </View>
-          {task.cancel_reason && (
-            <Text className="text-sm text-gray-500 mt-2">Cancel reason: {task.cancel_reason}</Text>
+        {/* Overview */}
+        <View className="bg-surface-container-lowest rounded-xl p-5 mb-4">
+          <Text className="text-2xl font-extrabold text-on-surface tracking-tight mb-3">
+            {task.title}
+          </Text>
+          {task.description ? (
+            <Text className="text-sm text-on-surface-variant leading-relaxed mb-4">
+              {task.description}
+            </Text>
+          ) : null}
+          {(task.cancel_reason || task.reject_reason) && (
+            <View className="bg-error-container px-4 py-3 rounded-xl mt-2">
+              <Text className="text-xs text-on-error-container font-semibold">
+                {task.cancel_reason ? `Cancel reason: ${task.cancel_reason}` : `Reject reason: ${task.reject_reason}`}
+              </Text>
+            </View>
           )}
-          {task.reject_reason && (
-            <Text className="text-sm text-gray-500 mt-2">Reject reason: {task.reject_reason}</Text>
-          )}
-        </Section>
+        </View>
 
         {/* Details */}
         <Section title="Details">
-          {task.description ? (
-            <Text className="text-sm text-gray-700 dark:text-gray-300 mb-3">{task.description}</Text>
-          ) : null}
           <InfoRow label="Location" value={task.location_name} />
           {task.location_lat && task.location_lng && (
             <InfoRow
@@ -150,56 +156,41 @@ export default function BOTaskDetailScreen() {
           )}
           <InfoRow
             label="Scheduled"
-            value={
-              task.scheduled_at
-                ? new Date(task.scheduled_at).toLocaleString('vi-VN')
-                : undefined
-            }
+            value={task.scheduled_at ? new Date(task.scheduled_at).toLocaleString('vi-VN') : undefined}
           />
           <InfoRow
             label="Deadline"
             value={task.deadline ? new Date(task.deadline).toLocaleString('vi-VN') : undefined}
           />
-          <InfoRow
-            label="Created"
-            value={new Date(task.created_at).toLocaleString('vi-VN')}
-          />
+          <InfoRow label="Created" value={new Date(task.created_at).toLocaleString('vi-VN')} />
         </Section>
 
         {/* Check-in / Check-out */}
         {(task.checkin || task.checkout) && (
           <Section title="Check-in / Check-out">
             {task.checkin && (
-              <View className="mb-3">
-                <Text className="text-xs font-semibold text-green-600 mb-1">✅ Check-in</Text>
-                <InfoRow
-                  label="Time"
-                  value={
-                    task.checkin.checked_in_at
-                      ? new Date(task.checkin.checked_in_at).toLocaleString('vi-VN')
-                      : undefined
-                  }
-                />
+              <View className="mb-4">
+                <View className="flex-row items-center gap-2 mb-3">
+                  <View className="w-2 h-2 rounded-full bg-success" />
+                  <Text className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Check-in</Text>
+                </View>
+                <InfoRow label="Time" value={task.checkin.checked_in_at ? new Date(task.checkin.checked_in_at).toLocaleString('vi-VN') : undefined} />
                 <InfoRow label="Notes" value={task.checkin.notes} />
                 {task.checkin.gps_lat && (
                   <InfoRow label="GPS" value={`${task.checkin.gps_lat}, ${task.checkin.gps_lng}`} />
                 )}
                 {task.checkin.photo_url && (
-                  <Text className="text-xs text-brand mt-1">📷 Photo attached</Text>
+                  <Text className="text-xs text-primary mt-1">📷 Photo attached</Text>
                 )}
               </View>
             )}
             {task.checkout && (
               <View>
-                <Text className="text-xs font-semibold text-blue-600 mb-1">🏁 Check-out</Text>
-                <InfoRow
-                  label="Time"
-                  value={
-                    task.checkout.checked_out_at
-                      ? new Date(task.checkout.checked_out_at).toLocaleString('vi-VN')
-                      : undefined
-                  }
-                />
+                <View className="flex-row items-center gap-2 mb-3">
+                  <View className="w-2 h-2 rounded-full bg-primary" />
+                  <Text className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Check-out</Text>
+                </View>
+                <InfoRow label="Time" value={task.checkout.checked_out_at ? new Date(task.checkout.checked_out_at).toLocaleString('vi-VN') : undefined} />
                 <InfoRow label="Notes" value={task.checkout.notes} />
               </View>
             )}
@@ -207,34 +198,38 @@ export default function BOTaskDetailScreen() {
         )}
 
         {/* Assignees */}
-        <Section title="Assignees">
-          {task.assignees.length === 0 ? (
-            <Text className="text-sm text-gray-400">No assignees</Text>
+        <Section title="Assigned Staff">
+          {(task.assignees?.length ?? 0) === 0 ? (
+            <Text className="text-sm text-on-surface-variant">No assignees</Text>
           ) : (
-            task.assignees.map((a) => (
-              <View key={a.id} className="flex-row items-center justify-between mb-2">
-                <Text className="text-sm text-gray-900 dark:text-white">{a.full_name}</Text>
+            task.assignees!.map((a) => (
+              <View key={a.id} className="flex-row items-center justify-between py-2.5">
+                <View className="flex-row items-center gap-3">
+                  <View className="w-8 h-8 rounded-full bg-surface-container-high items-center justify-center">
+                    <Text className="text-xs font-bold text-primary">{a.full_name.charAt(0)}</Text>
+                  </View>
+                  <Text className="text-sm font-semibold text-on-surface">{a.full_name}</Text>
+                </View>
                 {canModify && (
-                  <Pressable
-                    onPress={() => unassignMutation.mutate(a.id)}
-                    className="active:opacity-60"
-                  >
-                    <Text className="text-xs text-red-400">Remove</Text>
+                  <Pressable onPress={() => unassignMutation.mutate(a.id)} className="active:opacity-60">
+                    <Text className="text-xs font-semibold text-error">Remove</Text>
                   </Pressable>
                 )}
               </View>
             ))
           )}
           {canModify && unassignedStaff.length > 0 && (
-            <View className="mt-3 border-t border-gray-100 dark:border-gray-800 pt-3">
-              <Text className="text-xs text-gray-400 mb-2">Add staff:</Text>
+            <View className="mt-3 pt-3" style={{ borderTopWidth: 1, borderTopColor: 'rgba(195,198,214,0.3)' }}>
+              <Text className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-2">
+                Add Staff
+              </Text>
               {unassignedStaff.map((s) => (
                 <Pressable
                   key={s.id}
                   onPress={() => assignMutation.mutate(s.id)}
-                  className="flex-row items-center py-1.5 active:opacity-60"
+                  className="py-2 active:opacity-60"
                 >
-                  <Text className="text-brand text-sm">+ {s.full_name}</Text>
+                  <Text className="text-sm text-primary font-semibold">+ {s.full_name}</Text>
                 </Pressable>
               ))}
             </View>
@@ -244,87 +239,75 @@ export default function BOTaskDetailScreen() {
         {/* Actions */}
         {canModify && (
           <Section title="Actions">
-            {/* Cancel */}
             {showCancelInput ? (
-              <View className="gap-2 mb-3">
+              <View className="gap-3 mb-3">
                 <TextInput
-                  className="border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900"
+                  className="bg-surface-container-high rounded-xl px-4 py-3 text-sm text-on-surface"
                   placeholder="Cancel reason (optional)"
-                  placeholderTextColor="#9ca3af"
+                  placeholderTextColor="#737685"
                   value={reason}
                   onChangeText={setReason}
                 />
-                <View className="flex-row gap-2">
+                <View className="flex-row gap-3">
                   <Pressable
                     onPress={() => cancelMutation.mutate()}
                     disabled={cancelMutation.isPending}
-                    className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-xl py-2 items-center active:opacity-70"
+                    className="flex-1 bg-surface-container-high rounded-xl py-3 items-center active:opacity-70"
                   >
-                    {cancelMutation.isPending ? (
-                      <ActivityIndicator size="small" />
-                    ) : (
-                      <Text className="text-sm font-medium text-gray-700 dark:text-white">
-                        Confirm Cancel
-                      </Text>
+                    {cancelMutation.isPending ? <ActivityIndicator size="small" /> : (
+                      <Text className="text-sm font-bold text-on-surface">Confirm Cancel</Text>
                     )}
                   </Pressable>
                   <Pressable
                     onPress={() => { setShowCancelInput(false); setReason(''); }}
-                    className="px-4 py-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 active:opacity-70"
+                    className="px-4 py-3 rounded-xl bg-surface-container items-center active:opacity-70"
                   >
-                    <Text className="text-sm text-gray-500">Dismiss</Text>
+                    <Text className="text-sm text-on-surface-variant">Dismiss</Text>
                   </Pressable>
                 </View>
               </View>
             ) : (
               <Pressable
                 onPress={() => { setShowCancelInput(true); setShowRejectInput(false); setReason(''); }}
-                className="py-3 rounded-xl bg-gray-100 dark:bg-gray-800 items-center mb-2 active:opacity-70"
+                className="py-3 rounded-xl bg-surface-container-high items-center mb-3 active:opacity-70"
               >
-                <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Cancel Task
-                </Text>
+                <Text className="text-sm font-bold text-on-surface">Cancel Task</Text>
               </Pressable>
             )}
 
-            {/* Reject */}
             {showRejectInput ? (
-              <View className="gap-2">
+              <View className="gap-3">
                 <TextInput
-                  className="border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-900"
+                  className="bg-surface-container-high rounded-xl px-4 py-3 text-sm text-on-surface"
                   placeholder="Reject reason (optional)"
-                  placeholderTextColor="#9ca3af"
+                  placeholderTextColor="#737685"
                   value={reason}
                   onChangeText={setReason}
                 />
-                <View className="flex-row gap-2">
+                <View className="flex-row gap-3">
                   <Pressable
                     onPress={() => rejectMutation.mutate()}
                     disabled={rejectMutation.isPending}
-                    className="flex-1 bg-red-500 rounded-xl py-2 items-center active:opacity-70"
+                    className="flex-1 bg-error rounded-xl py-3 items-center active:opacity-70"
                   >
-                    {rejectMutation.isPending ? (
-                      <ActivityIndicator color="#fff" size="small" />
-                    ) : (
-                      <Text className="text-sm font-medium text-white">Confirm Reject</Text>
+                    {rejectMutation.isPending ? <ActivityIndicator color="#fff" size="small" /> : (
+                      <Text className="text-sm font-bold text-on-error">Confirm Reject</Text>
                     )}
                   </Pressable>
                   <Pressable
                     onPress={() => { setShowRejectInput(false); setReason(''); }}
-                    className="px-4 py-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 active:opacity-70"
+                    className="px-4 py-3 rounded-xl bg-surface-container items-center active:opacity-70"
                   >
-                    <Text className="text-sm text-gray-500">Dismiss</Text>
+                    <Text className="text-sm text-on-surface-variant">Dismiss</Text>
                   </Pressable>
                 </View>
               </View>
             ) : (
               <Pressable
                 onPress={() => { setShowRejectInput(true); setShowCancelInput(false); setReason(''); }}
-                className="py-3 rounded-xl bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 items-center active:opacity-70"
+                className="py-3 rounded-xl bg-error-container items-center active:opacity-70"
               >
-                <Text className="text-sm font-medium text-red-600 dark:text-red-400">
-                  Reject Task
-                </Text>
+                <Text className="text-sm font-bold text-on-error-container">Reject Task</Text>
               </Pressable>
             )}
           </Section>
@@ -334,16 +317,14 @@ export default function BOTaskDetailScreen() {
         {auditData && auditData.length > 0 && (
           <Section title="Activity Log">
             {auditData.map((log) => (
-              <View key={log.id} className="flex-row mb-3">
-                <View className="w-1.5 h-1.5 rounded-full bg-brand mt-1.5 mr-3" />
+              <View key={log.id} className="flex-row mb-4">
+                <View className="w-2 h-2 rounded-full bg-primary mt-1.5 mr-3" />
                 <View className="flex-1">
-                  <Text className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                    {log.actor_name}
-                  </Text>
-                  <Text className="text-xs text-gray-500 capitalize">
+                  <Text className="text-xs font-bold text-on-surface">{log.actor_name}</Text>
+                  <Text className="text-xs text-on-surface-variant capitalize mt-0.5">
                     {log.action.replace(/_/g, ' ')}
                   </Text>
-                  <Text className="text-xs text-gray-400">
+                  <Text className="text-xs text-outline mt-0.5">
                     {new Date(log.created_at).toLocaleString('vi-VN')}
                   </Text>
                 </View>

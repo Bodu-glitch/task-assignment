@@ -16,26 +16,25 @@ function NotificationItem({
 }) {
   return (
     <Pressable
-      onPress={() => {
-        if (!item.is_read) onMarkRead(item.id);
-      }}
-      className={`px-4 py-4 border-b border-gray-100 dark:border-gray-800 active:opacity-70 ${
-        !item.is_read ? 'bg-blue-50 dark:bg-blue-950' : 'bg-white dark:bg-gray-900'
+      onPress={() => { if (!item.is_read) onMarkRead(item.id); }}
+      className={`px-4 py-4 mb-2 mx-4 rounded-xl active:opacity-70 overflow-hidden ${
+        !item.is_read ? 'bg-secondary-container' : 'bg-surface-container-lowest'
       }`}
     >
+      {!item.is_read && (
+        <View className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />
+      )}
       <View className="flex-row items-start">
-        {!item.is_read && (
-          <View className="w-2 h-2 rounded-full bg-brand mt-1.5 mr-3 flex-shrink-0" />
-        )}
-        <View className={`flex-1 ${item.is_read ? 'ml-5' : ''}`}>
-          <Text className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">
-            {item.title}
-          </Text>
-          <Text className="text-sm text-gray-600 dark:text-gray-300">{item.body}</Text>
-          <Text className="text-xs text-gray-400 mt-1">
+        <View className="flex-1">
+          <Text className="text-sm font-bold text-on-surface mb-0.5">{item.title}</Text>
+          <Text className="text-sm text-on-surface-variant">{item.body}</Text>
+          <Text className="text-xs text-outline mt-1.5">
             {new Date(item.created_at).toLocaleString('vi-VN')}
           </Text>
         </View>
+        {!item.is_read && (
+          <View className="w-2 h-2 rounded-full bg-primary mt-1.5 ml-3 flex-shrink-0" />
+        )}
       </View>
     </Pressable>
   );
@@ -66,30 +65,24 @@ export default function NotificationCenterScreen() {
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   return (
-    <View className="flex-1 bg-white dark:bg-gray-900">
-      {/* Header */}
-      <View className="bg-white dark:bg-gray-900 px-5 pt-14 pb-4 border-b border-gray-100 dark:border-gray-800">
+    <View className="flex-1 bg-surface-container-low">
+      {/* Glass Header */}
+      <View className="glass-effect px-5 pt-14 pb-4">
         <View className="flex-row items-center justify-between">
-          <View className="flex-row items-center">
-            <Pressable onPress={() => router.back()} className="mr-3 active:opacity-60">
-              <Text className="text-brand text-base">← Back</Text>
+          <View className="flex-row items-center gap-3">
+            <Pressable onPress={() => router.back()} className="active:opacity-60">
+              <Text className="text-primary font-semibold">← Back</Text>
             </Pressable>
             <View>
-              <Text className="text-lg font-bold text-gray-900 dark:text-white">
-                Notifications
-              </Text>
+              <Text className="text-xl font-extrabold text-on-surface tracking-tight">Notifications</Text>
               {unreadCount > 0 && (
-                <Text className="text-xs text-brand">{unreadCount} unread</Text>
+                <Text className="text-xs text-primary font-semibold">{unreadCount} unread</Text>
               )}
             </View>
           </View>
           {unreadCount > 0 && (
-            <Pressable
-              onPress={() => markAllReadMutation.mutate()}
-              disabled={markAllReadMutation.isPending}
-              className="active:opacity-60"
-            >
-              <Text className="text-sm text-brand font-medium">Mark all read</Text>
+            <Pressable onPress={() => markAllReadMutation.mutate()} disabled={markAllReadMutation.isPending} className="active:opacity-60">
+              <Text className="text-xs font-bold text-primary">Mark all read</Text>
             </Pressable>
           )}
         </View>
@@ -101,10 +94,11 @@ export default function NotificationCenterScreen() {
         renderItem={({ item }) => (
           <NotificationItem item={item} onMarkRead={(id) => markReadMutation.mutate(id)} />
         )}
+        contentContainerStyle={{ paddingTop: 16, paddingBottom: 32 }}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
         ListEmptyComponent={
           <View className="py-16 items-center">
-            <Text className="text-gray-400">No notifications</Text>
+            <Text className="text-on-surface-variant text-sm">No notifications</Text>
           </View>
         }
       />

@@ -1,5 +1,3 @@
-import { Platform } from 'react-native';
-
 export const TOKEN_KEY = 'auth_token';
 export const REFRESH_TOKEN_KEY = 'auth_refresh_token';
 export const TENANT_KEY = 'auth_tenant_id';
@@ -16,50 +14,41 @@ export class ApiError extends Error {
   }
 }
 
-// Web-safe token storage: use localStorage on web, SecureStore on native
-const storage = {
-  get: async (key: string): Promise<string | null> => {
-    if (Platform.OS === 'web') {
-      return localStorage.getItem(key);
-    }
-    const SecureStore = await import('expo-secure-store');
-    return SecureStore.getItemAsync(key);
-  },
-  set: async (key: string, value: string): Promise<void> => {
-    if (Platform.OS === 'web') {
-      localStorage.setItem(key, value);
-      return;
-    }
-    const SecureStore = await import('expo-secure-store');
-    await SecureStore.setItemAsync(key, value);
-  },
-  remove: async (key: string): Promise<void> => {
-    if (Platform.OS === 'web') {
-      localStorage.removeItem(key);
-      return;
-    }
-    const SecureStore = await import('expo-secure-store');
-    await SecureStore.deleteItemAsync(key);
-  },
-};
-
 export const tokenStore = {
-  get: () => storage.get(TOKEN_KEY),
-  set: (token: string) => storage.set(TOKEN_KEY, token),
-  remove: () => storage.remove(TOKEN_KEY),
-  getRefresh: () => storage.get(REFRESH_TOKEN_KEY),
-  setRefresh: (token: string) => storage.set(REFRESH_TOKEN_KEY, token),
-  removeRefresh: () => storage.remove(REFRESH_TOKEN_KEY),
+  get: (): Promise<string | null> => Promise.resolve(localStorage.getItem(TOKEN_KEY)),
+  set: (token: string): Promise<void> => {
+    localStorage.setItem(TOKEN_KEY, token);
+    return Promise.resolve();
+  },
+  remove: (): Promise<void> => {
+    localStorage.removeItem(TOKEN_KEY);
+    return Promise.resolve();
+  },
+  getRefresh: (): Promise<string | null> => Promise.resolve(localStorage.getItem(REFRESH_TOKEN_KEY)),
+  setRefresh: (token: string): Promise<void> => {
+    localStorage.setItem(REFRESH_TOKEN_KEY, token);
+    return Promise.resolve();
+  },
+  removeRefresh: (): Promise<void> => {
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    return Promise.resolve();
+  },
 };
 
 export const tenantStore = {
-  get: () => storage.get(TENANT_KEY),
-  set: (tenantId: string) => storage.set(TENANT_KEY, tenantId),
-  remove: () => storage.remove(TENANT_KEY),
+  get: (): Promise<string | null> => Promise.resolve(localStorage.getItem(TENANT_KEY)),
+  set: (tenantId: string): Promise<void> => {
+    localStorage.setItem(TENANT_KEY, tenantId);
+    return Promise.resolve();
+  },
+  remove: (): Promise<void> => {
+    localStorage.removeItem(TENANT_KEY);
+    return Promise.resolve();
+  },
 };
 
 async function doFetch<T>(path: string, options: RequestInit, token: string | null): Promise<T> {
-  const tenantId = await tenantStore.get();
+  const tenantId = localStorage.getItem(TENANT_KEY);
 
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),
@@ -97,21 +86,20 @@ export async function apiFetch<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const token = await tokenStore.get();
+  const token = localStorage.getItem(TOKEN_KEY);
 
   try {
     return await doFetch<T>(path, options, token);
   } catch (err) {
     if (err instanceof ApiError && err.status === 401) {
-      // Attempt token refresh via Supabase
-      const refreshToken = await tokenStore.getRefresh();
+      const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
       if (refreshToken) {
         try {
           const { supabase } = await import('@/lib/supabase');
           const { data, error } = await supabase.auth.refreshSession({ refresh_token: refreshToken });
           if (!error && data.session) {
-            await tokenStore.set(data.session.access_token);
-            await tokenStore.setRefresh(data.session.refresh_token);
+            localStorage.setItem(TOKEN_KEY, data.session.access_token);
+            localStorage.setItem(REFRESH_TOKEN_KEY, data.session.refresh_token);
             return await doFetch<T>(path, options, data.session.access_token);
           }
         } catch {

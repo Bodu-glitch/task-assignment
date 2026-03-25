@@ -21,42 +21,45 @@ const ACTION_FILTERS: { label: string; value: AuditAction | undefined }[] = [
   { label: 'Member removed', value: 'member_removed' },
 ];
 
-const ACTION_COLORS: Record<string, string> = {
-  task_created: 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300',
-  task_updated: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300',
-  task_assigned: 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300',
-  task_cancelled: 'bg-gray-100 dark:bg-gray-800 text-gray-500',
-  task_rejected: 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300',
-  checkin: 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300',
-  checkout: 'bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300',
-  member_invited: 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300',
-  member_removed: 'bg-red-100 dark:bg-red-900 text-red-500',
-  status_changed: 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300',
-  task_completed: 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300',
+const ACTION_PILL: Record<string, { pill: string; badge: string; badgeText: string }> = {
+  task_created:   { pill: 'bg-primary',   badge: 'bg-secondary-container',  badgeText: 'text-on-secondary-container' },
+  task_updated:   { pill: 'bg-warning',   badge: 'bg-warning-container',    badgeText: 'text-on-warning-container' },
+  task_assigned:  { pill: 'bg-secondary', badge: 'bg-secondary-container',  badgeText: 'text-on-secondary-container' },
+  task_cancelled: { pill: 'bg-outline',   badge: 'bg-surface-container-highest', badgeText: 'text-on-surface-variant' },
+  task_rejected:  { pill: 'bg-error',     badge: 'bg-error-container',      badgeText: 'text-on-error-container' },
+  checkin:        { pill: 'bg-success',   badge: 'bg-success-container',    badgeText: 'text-on-success-container' },
+  checkout:       { pill: 'bg-success',   badge: 'bg-success-container',    badgeText: 'text-on-success-container' },
+  member_invited: { pill: 'bg-secondary', badge: 'bg-secondary-container',  badgeText: 'text-on-secondary-container' },
+  member_removed: { pill: 'bg-error',     badge: 'bg-error-container',      badgeText: 'text-on-error-container' },
+  status_changed: { pill: 'bg-warning',   badge: 'bg-warning-container',    badgeText: 'text-on-warning-container' },
+  task_completed: { pill: 'bg-success',   badge: 'bg-success-container',    badgeText: 'text-on-success-container' },
 };
 
 function AuditCard({ log }: { log: AuditLog }) {
-  const colorClass =
-    ACTION_COLORS[log.action] ?? 'bg-gray-100 dark:bg-gray-800 text-gray-500';
+  const style = ACTION_PILL[log.action] ?? { pill: 'bg-outline', badge: 'bg-surface-container-highest', badgeText: 'text-on-surface-variant' };
 
   return (
-    <View className="bg-white dark:bg-gray-900 rounded-2xl p-4 mb-3 border border-gray-100 dark:border-gray-800">
-      <View className="flex-row items-start justify-between mb-1">
-        <View className={`px-2.5 py-1 rounded-full ${colorClass.split(' ').slice(0, 2).join(' ')}`}>
-          <Text className={`text-xs font-semibold ${colorClass.split(' ').slice(2).join(' ')}`}>
+    <View className="bg-surface-container-lowest rounded-xl p-4 mb-3 flex-row items-start overflow-hidden">
+      <View className={`absolute left-0 top-0 bottom-0 w-1 ${style.pill}`} />
+      <View className="w-10 h-10 rounded-xl bg-surface-container-high items-center justify-center mr-3">
+        <Text className="text-sm font-extrabold text-primary">{log.actor_name?.charAt(0) ?? '?'}</Text>
+      </View>
+      <View className="flex-1">
+        <View className="flex-row items-center justify-between mb-1">
+          <Text className="text-sm font-bold text-on-surface">{log.actor_name}</Text>
+          <Text className="text-[10px] text-outline uppercase tracking-wider">
+            {new Date(log.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+          </Text>
+        </View>
+        <View className={`self-start px-2.5 py-0.5 rounded-full mb-1.5 ${style.badge}`}>
+          <Text className={`text-[10px] font-bold uppercase tracking-wider ${style.badgeText}`}>
             {log.action.replace(/_/g, ' ')}
           </Text>
         </View>
-        <Text className="text-xs text-gray-400">
+        <Text className="text-xs text-outline">
           {new Date(log.created_at).toLocaleDateString('vi-VN')}
         </Text>
       </View>
-      <Text className="text-sm font-semibold text-gray-900 dark:text-white mt-1">
-        {log.actor_name}
-      </Text>
-      <Text className="text-xs text-gray-400 mt-0.5">
-        {new Date(log.created_at).toLocaleTimeString('vi-VN')}
-      </Text>
     </View>
   );
 }
@@ -77,14 +80,14 @@ export default function AuditLogScreen() {
   if (isError) return <ErrorView onRetry={refetch} />;
 
   return (
-    <View className="flex-1 bg-gray-50 dark:bg-black">
-      {/* Header */}
-      <View className="bg-white dark:bg-gray-900 px-5 pt-14 pb-3 border-b border-gray-100 dark:border-gray-800">
-        <View className="flex-row items-center mb-3">
-          <Pressable onPress={() => router.back()} className="mr-3 active:opacity-60">
-            <Text className="text-brand text-base">← Back</Text>
+    <View className="flex-1 bg-surface-container-low">
+      {/* Glass Header */}
+      <View className="glass-effect px-5 pt-14 pb-3">
+        <View className="flex-row items-center gap-3 mb-4">
+          <Pressable onPress={() => router.back()} className="active:opacity-60">
+            <Text className="text-primary font-semibold">← Back</Text>
           </Pressable>
-          <Text className="text-lg font-bold text-gray-900 dark:text-white">Audit Log</Text>
+          <Text className="text-xl font-extrabold text-on-surface tracking-tight flex-1">Audit Log</Text>
         </View>
 
         <FlatList
@@ -95,15 +98,11 @@ export default function AuditLogScreen() {
           renderItem={({ item }) => (
             <Pressable
               onPress={() => { setActionFilter(item.value); setPage(1); }}
-              className={`px-3 py-1.5 rounded-full mr-2 ${
-                actionFilter === item.value ? 'bg-brand' : 'bg-gray-100 dark:bg-gray-800'
+              className={`px-4 py-2 rounded-full mr-2 ${
+                actionFilter === item.value ? 'kinetic-gradient' : 'bg-surface-container-highest'
               }`}
             >
-              <Text
-                className={`text-sm font-medium ${
-                  actionFilter === item.value ? 'text-white' : 'text-gray-600 dark:text-gray-300'
-                }`}
-              >
+              <Text className={`text-xs font-bold ${actionFilter === item.value ? 'text-on-primary' : 'text-on-surface-variant'}`}>
                 {item.label}
               </Text>
             </Pressable>
@@ -115,22 +114,22 @@ export default function AuditLogScreen() {
         data={logs}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <AuditCard log={item} />}
-        contentContainerStyle={{ paddingTop: 12, paddingHorizontal: 16, paddingBottom: 24 }}
+        contentContainerStyle={{ paddingTop: 16, paddingHorizontal: 16, paddingBottom: 32 }}
         refreshControl={
           <RefreshControl refreshing={isRefetching} onRefresh={() => { setPage(1); refetch(); }} />
         }
         ListEmptyComponent={
           <View className="py-16 items-center">
-            <Text className="text-gray-400">No audit logs found</Text>
+            <Text className="text-on-surface-variant text-sm">No audit logs found</Text>
           </View>
         }
         ListFooterComponent={
           meta && meta.page * meta.limit < meta.total ? (
             <Pressable
               onPress={() => setPage((p) => p + 1)}
-              className="py-3 rounded-xl border border-gray-200 dark:border-gray-700 items-center mb-4 active:opacity-60"
+              className="py-3 rounded-xl bg-surface-container-high items-center mb-4 active:opacity-60"
             >
-              <Text className="text-brand font-medium">Load more</Text>
+              <Text className="text-primary font-semibold text-sm">Load more</Text>
             </Pressable>
           ) : null
         }

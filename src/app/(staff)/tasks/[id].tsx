@@ -13,8 +13,8 @@ import { ApiError } from '@/lib/api/client';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <View className="bg-white dark:bg-gray-900 rounded-2xl p-4 mb-3 border border-gray-100 dark:border-gray-800">
-      <Text className="text-xs font-semibold text-gray-400 uppercase mb-3">{title}</Text>
+    <View className="bg-surface-container-lowest rounded-xl p-5 mb-4">
+      <Text className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-4">{title}</Text>
       {children}
     </View>
   );
@@ -23,9 +23,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function InfoRow({ label, value }: { label: string; value?: string | null }) {
   if (!value) return null;
   return (
-    <View className="flex-row items-start mb-2">
-      <Text className="text-sm text-gray-500 w-28">{label}</Text>
-      <Text className="text-sm text-gray-900 dark:text-white flex-1">{value}</Text>
+    <View className="flex-row items-start mb-3">
+      <Text className="text-xs font-semibold text-on-surface-variant w-24">{label}</Text>
+      <Text className="text-sm text-on-surface flex-1">{value}</Text>
     </View>
   );
 }
@@ -167,84 +167,68 @@ export default function StaffTaskDetailScreen() {
   if (isError || !data) return <ErrorView onRetry={refetch} />;
 
   const task = data;
-  const canCheckin = task.status === 'pending';
+  const canCheckin = task.status === 'todo';
   const canCheckout = task.status === 'in_progress';
-  const canReject = task.status === 'pending' || task.status === 'in_progress';
+  const canReject = task.status === 'todo' || task.status === 'in_progress';
   const isMutating = checkinMutation.isPending || checkoutMutation.isPending;
 
   return (
-    <View className="flex-1 bg-gray-50 dark:bg-black">
-      {/* Header */}
-      <View className="bg-white dark:bg-gray-900 px-5 pt-14 pb-4 border-b border-gray-100 dark:border-gray-800">
-        <View className="flex-row items-center">
-          <Pressable onPress={() => router.back()} className="mr-3 active:opacity-60">
-            <Text className="text-brand text-base">← Back</Text>
+    <View className="flex-1 bg-surface">
+      {/* Glass Header */}
+      <View className="glass-effect px-5 pt-14 pb-4">
+        <View className="flex-row items-center gap-3">
+          <Pressable onPress={() => router.back()} className="active:opacity-60">
+            <Text className="text-primary font-semibold">← Back</Text>
           </Pressable>
-          <Text
-            className="text-lg font-bold text-gray-900 dark:text-white flex-1"
-            numberOfLines={1}
-          >
-            {task.title}
+          <Text className="text-lg font-extrabold text-on-surface tracking-tight flex-1" numberOfLines={1}>
+            Task Details
           </Text>
+          <View className="flex-row gap-2">
+            <StatusBadge status={task.status} />
+            {task.priority && <PriorityBadge priority={task.priority} />}
+          </View>
         </View>
       </View>
 
       <ScrollView
-        className="flex-1 px-4 pt-4"
+        className="flex-1 px-4 pt-5"
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
       >
-        {/* Status */}
-        <Section title="Status">
-          <View className="flex-row gap-2 flex-wrap">
-            <StatusBadge status={task.status} />
-            {task.priority && <PriorityBadge priority={task.priority} />}
-          </View>
+        {/* Overview */}
+        <View className="bg-surface-container-lowest rounded-xl p-5 mb-4">
+          <Text className="text-2xl font-extrabold text-on-surface tracking-tight mb-3">{task.title}</Text>
+          {task.description ? (
+            <Text className="text-sm text-on-surface-variant leading-relaxed">{task.description}</Text>
+          ) : null}
           {task.reject_reason && (
-            <Text className="text-sm text-red-500 mt-2">Reason: {task.reject_reason}</Text>
+            <View className="bg-error-container px-4 py-3 rounded-xl mt-3">
+              <Text className="text-xs text-on-error-container font-semibold">Rejected: {task.reject_reason}</Text>
+            </View>
           )}
-        </Section>
+        </View>
 
         {/* Details */}
         <Section title="Details">
-          {task.description ? (
-            <Text className="text-sm text-gray-700 dark:text-gray-300 mb-3">{task.description}</Text>
-          ) : null}
           <InfoRow label="Location" value={task.location_name} />
           {task.location_lat && task.location_lng && (
-            <InfoRow
-              label="GPS"
-              value={`${task.location_lat}, ${task.location_lng}${task.location_radius_m ? ` (±${task.location_radius_m}m)` : ''}`}
-            />
+            <InfoRow label="GPS" value={`${task.location_lat}, ${task.location_lng}${task.location_radius_m ? ` (±${task.location_radius_m}m)` : ''}`} />
           )}
-          <InfoRow
-            label="Scheduled"
-            value={task.scheduled_at ? new Date(task.scheduled_at).toLocaleString('vi-VN') : undefined}
-          />
-          <InfoRow
-            label="Deadline"
-            value={task.deadline ? new Date(task.deadline).toLocaleString('vi-VN') : undefined}
-          />
+          <InfoRow label="Scheduled" value={task.scheduled_at ? new Date(task.scheduled_at).toLocaleString('vi-VN') : undefined} />
+          <InfoRow label="Deadline" value={task.deadline ? new Date(task.deadline).toLocaleString('vi-VN') : undefined} />
         </Section>
 
         {/* Existing check-in info */}
         {task.checkin && (
           <Section title="Check-in Info">
-            <InfoRow
-              label="Time"
-              value={task.checkin.checked_in_at ? new Date(task.checkin.checked_in_at).toLocaleString('vi-VN') : undefined}
-            />
+            <InfoRow label="Time" value={task.checkin.checked_in_at ? new Date(task.checkin.checked_in_at).toLocaleString('vi-VN') : undefined} />
             <InfoRow label="Notes" value={task.checkin.notes} />
             {task.checkin.gps_lat && (
               <InfoRow label="GPS" value={`${task.checkin.gps_lat}, ${task.checkin.gps_lng}`} />
             )}
             {task.checkin.photo_url && (
               <View className="mt-2">
-                <Text className="text-xs text-gray-400 mb-1">Check-in photo:</Text>
-                <RNImage
-                  source={{ uri: task.checkin.photo_url }}
-                  style={{ width: '100%', height: 160, borderRadius: 12 }}
-                  resizeMode="cover"
-                />
+                <Text className="text-xs text-on-surface-variant mb-2">Check-in photo:</Text>
+                <RNImage source={{ uri: task.checkin.photo_url }} style={{ width: '100%', height: 160, borderRadius: 12 }} resizeMode="cover" />
               </View>
             )}
           </Section>
@@ -253,11 +237,10 @@ export default function StaffTaskDetailScreen() {
         {/* Check-in / Check-out form */}
         {(canCheckin || canCheckout) && (
           <Section title={canCheckin ? 'Check In' : 'Check Out'}>
-            {/* Notes */}
             <TextInput
-              className="border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-base text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 mb-3"
+              className="bg-surface-container-high rounded-xl px-4 py-3 text-base text-on-surface mb-3"
               placeholder="Add notes (optional)"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#737685"
               value={notes}
               onChangeText={setNotes}
               multiline
@@ -265,57 +248,36 @@ export default function StaffTaskDetailScreen() {
               textAlignVertical="top"
             />
 
-            {/* Photo picker */}
             <View className="flex-row gap-2 mb-3">
-              <Pressable
-                onPress={takePhoto}
-                className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 items-center bg-white dark:bg-gray-900 active:opacity-70"
-              >
-                <Text className="text-sm text-gray-700 dark:text-gray-300">📷 Camera</Text>
+              <Pressable onPress={takePhoto} className="flex-1 py-2.5 rounded-xl bg-surface-container-high items-center active:opacity-70">
+                <Text className="text-sm text-on-surface font-semibold">📷 Camera</Text>
               </Pressable>
-              <Pressable
-                onPress={pickPhoto}
-                className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 items-center bg-white dark:bg-gray-900 active:opacity-70"
-              >
-                <Text className="text-sm text-gray-700 dark:text-gray-300">🖼 Gallery</Text>
+              <Pressable onPress={pickPhoto} className="flex-1 py-2.5 rounded-xl bg-surface-container-high items-center active:opacity-70">
+                <Text className="text-sm text-on-surface font-semibold">🖼 Gallery</Text>
               </Pressable>
             </View>
 
-            {/* Photo preview */}
             {photoUri && (
               <View className="mb-3">
-                <RNImage
-                  source={{ uri: photoUri }}
-                  style={{ width: '100%', height: 160, borderRadius: 12 }}
-                  resizeMode="cover"
-                />
-                <Pressable
-                  onPress={() => setPhotoUri(null)}
-                  className="absolute top-2 right-2 bg-black/50 rounded-full w-7 h-7 items-center justify-center"
-                >
+                <RNImage source={{ uri: photoUri }} style={{ width: '100%', height: 160, borderRadius: 12 }} resizeMode="cover" />
+                <Pressable onPress={() => setPhotoUri(null)} className="absolute top-2 right-2 bg-black/50 rounded-full w-7 h-7 items-center justify-center">
                   <Text className="text-white text-xs font-bold">✕</Text>
                 </Pressable>
               </View>
             )}
 
-            {/* GPS notice */}
             {task.location_radius_m && (
-              <View className="bg-blue-50 dark:bg-blue-950 rounded-xl px-3 py-2 mb-3">
-                <Text className="text-xs text-blue-600 dark:text-blue-400">
-                  📍 GPS verification required — must be within {task.location_radius_m}m of task location
+              <View className="bg-secondary-container rounded-xl px-3 py-2 mb-3">
+                <Text className="text-xs text-on-secondary-container">
+                  📍 GPS required — within {task.location_radius_m}m of task location
                 </Text>
               </View>
             )}
 
-            {/* Action button */}
             <Pressable
-              onPress={() =>
-                canCheckin ? checkinMutation.mutate() : checkoutMutation.mutate()
-              }
+              onPress={() => canCheckin ? checkinMutation.mutate() : checkoutMutation.mutate()}
               disabled={isMutating}
-              className={`py-4 rounded-2xl items-center active:opacity-80 disabled:opacity-50 ${
-                canCheckin ? 'bg-green-500' : 'bg-blue-500'
-              }`}
+              className={`py-4 rounded-2xl items-center active:opacity-80 disabled:opacity-50 ${canCheckin ? 'bg-success' : 'kinetic-gradient'}`}
             >
               {isMutating ? (
                 <ActivityIndicator color="#fff" />
@@ -334,9 +296,9 @@ export default function StaffTaskDetailScreen() {
             {showRejectInput ? (
               <View className="gap-3">
                 <TextInput
-                  className="border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-base text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800"
+                  className="bg-surface-container-high rounded-xl px-4 py-3 text-base text-on-surface"
                   placeholder="Reason for rejection"
-                  placeholderTextColor="#9ca3af"
+                  placeholderTextColor="#737685"
                   value={rejectReason}
                   onChangeText={setRejectReason}
                   multiline
@@ -344,33 +306,17 @@ export default function StaffTaskDetailScreen() {
                   textAlignVertical="top"
                 />
                 <View className="flex-row gap-2">
-                  <Pressable
-                    onPress={() => rejectMutation.mutate()}
-                    disabled={rejectMutation.isPending}
-                    className="flex-1 bg-red-500 rounded-xl py-3 items-center active:opacity-70 disabled:opacity-50"
-                  >
-                    {rejectMutation.isPending ? (
-                      <ActivityIndicator color="#fff" size="small" />
-                    ) : (
-                      <Text className="text-white font-semibold">Confirm Reject</Text>
-                    )}
+                  <Pressable onPress={() => rejectMutation.mutate()} disabled={rejectMutation.isPending} className="flex-1 bg-error rounded-xl py-3 items-center active:opacity-70 disabled:opacity-50">
+                    {rejectMutation.isPending ? <ActivityIndicator color="#fff" size="small" /> : <Text className="text-on-error font-bold">Confirm Reject</Text>}
                   </Pressable>
-                  <Pressable
-                    onPress={() => { setShowRejectInput(false); setRejectReason(''); }}
-                    className="px-4 py-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 active:opacity-70"
-                  >
-                    <Text className="text-sm text-gray-500">Cancel</Text>
+                  <Pressable onPress={() => { setShowRejectInput(false); setRejectReason(''); }} className="px-4 py-3 rounded-xl bg-surface-container items-center active:opacity-70">
+                    <Text className="text-sm text-on-surface-variant">Cancel</Text>
                   </Pressable>
                 </View>
               </View>
             ) : (
-              <Pressable
-                onPress={() => setShowRejectInput(true)}
-                className="py-3 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 items-center active:opacity-70"
-              >
-                <Text className="text-sm font-medium text-red-600 dark:text-red-400">
-                  ✕ Reject This Task
-                </Text>
+              <Pressable onPress={() => setShowRejectInput(true)} className="py-3 rounded-xl bg-error-container items-center active:opacity-70">
+                <Text className="text-sm font-bold text-on-error-container">✕ Reject This Task</Text>
               </Pressable>
             )}
           </Section>

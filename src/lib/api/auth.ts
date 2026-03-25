@@ -1,5 +1,5 @@
 import { apiFetch } from './client';
-import type { UserProfile, LoginResponse, RegisterInput, RegisterResponse, SelectTenantResponse } from '@/types/api';
+import type { UserProfile, LoginResponse, RegisterInput, RegisterResponse } from '@/types/api';
 
 export const authApi = {
   login: (email: string, password: string) =>
@@ -12,12 +12,6 @@ export const authApi = {
     apiFetch<{ data: RegisterResponse }>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(input),
-    }),
-
-  selectTenant: (user_id: string, tenant_id: string) =>
-    apiFetch<{ data: SelectTenantResponse }>('/auth/select-tenant', {
-      method: 'POST',
-      body: JSON.stringify({ user_id, tenant_id }),
     }),
 
   logout: () =>
@@ -48,5 +42,11 @@ export const authApi = {
     apiFetch<{ data: { success: boolean } }>('/auth/device-token', {
       method: 'PATCH',
       body: JSON.stringify({ device_token }),
+    }),
+
+  createTenant: (input: { tenant_name: string; tenant_slug?: string }) =>
+    apiFetch<{ data: { tenant: { id: string; name: string; slug: string } } }>('/auth/create-tenant', {
+      method: 'POST',
+      body: JSON.stringify(input),
     }),
 };

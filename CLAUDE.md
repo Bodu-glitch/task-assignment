@@ -26,6 +26,33 @@ Auth is handled by `src/context/auth.tsx` (`AuthProvider` / `useAuth()`). It per
 
 Login may return a `requires_tenant_selection` response — in this case `pendingSelection` is set and the user is redirected to `/(auth)/select-tenant` before a token is issued.
 
+### Google OAuth (loginWithGoogle)
+
+Implemented in `src/context/auth.tsx` (`loginWithGoogle`). Uses Supabase PKCE flow — **do not switch to implicit flow**.
+
+**Supabase client** (`src/lib/supabase.ts`): `flowType: 'pkce'` is required; `detectSessionInUrl: false` on native.
+
+**Redirect URI**:
+- Native: `makeRedirectUri({ path: 'oauth-callback' })` → `taskmanagement://oauth-callback`
+- Web: `window.location.origin`
+
+`taskmanagement://oauth-callback` must be in `additional_redirect_urls` in `supabase-local/supabase/config.toml`.
+
+**Native flow (iOS/Android)**:
+1. `supabase.auth.signInWithOAuth({ provider: 'google', skipBrowserRedirect: true })` → get URL
+2. `WebBrowser.openAuthSessionAsync(url, redirectTo)` → open Chrome Custom Tab
+3. Google redirects to `taskmanagement://oauth-callback?code=XXX`
+4. Expo Router routes to `/(auth)/oauth-callback` (within `(auth)` group — does NOT push to root stack)
+5. `Linking.addEventListener` (`handleDeepLink`) catches the URL → `exchangeCodeForSession(code)` → session
+6. `onAuthStateChange` SIGNED_IN → `handleSupabaseSession` → `pendingSelection` set
+7. `oauth-callback.tsx` `useEffect` detects `pendingSelection` → `router.replace('/(auth)/select-tenant')`
+
+**Android caveat**: `Linking` may fire before `openAuthSessionAsync` resolves. The `openAuthSessionAsync` success path calls `supabase.auth.getSession()` first — if a session already exists it skips the exchange to avoid `pkce_code_verifier_not_found`.
+
+**`(auth)/_layout.tsx`**: `<Stack.Screen name="oauth-callback" />` is placed outside all `Stack.Protected` blocks so it is always accessible when an OAuth callback arrives.
+
+**`oauth-callback.tsx`**: Does NOT rely on `Stack.Protected` for navigation — it actively navigates via `useEffect` when auth state resolves.
+
 `src/app/index.tsx` uses `useAuth()` to redirect:
 1. Loading → `<LoadingScreen />`
 2. `pendingSelection` → `/(auth)/select-tenant`
@@ -49,6 +76,7 @@ src/app/
 │   ├── _layout.tsx
 │   ├── login.tsx            → Login (AU-01 to AU-05)
 │   ├── register.tsx         → Register new account + tenant
+│   ├── oauth-callback.tsx   → OAuth deep link landing (PKCE code exchange + navigate)
 │   ├── select-tenant.tsx    → Tenant picker (multi-tenant login flow)
 │   └── invitations.tsx      → Pending staff invitations on first login
 │

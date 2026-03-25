@@ -70,21 +70,21 @@ export default function BOEmployeeManagementScreen() {
   const invitationList = invitationsQuery.data ?? [];
 
   return (
-    <View className="flex-1 bg-gray-50 dark:bg-black">
-      {/* Header */}
-      <View className="bg-white dark:bg-gray-900 px-5 pt-14 pb-4 border-b border-gray-100 dark:border-gray-800">
+    <View className="flex-1 bg-surface">
+      {/* Glass Header */}
+      <View className="glass-effect px-5 pt-14 pb-4">
         <View className="flex-row items-center justify-between mb-4">
-          <View className="flex-row items-center">
-            <Pressable onPress={() => router.back()} className="mr-3 active:opacity-60">
-              <Text className="text-brand text-base">← Back</Text>
+          <View className="flex-row items-center gap-3">
+            <Pressable onPress={() => router.back()} className="active:opacity-60">
+              <Text className="text-primary font-semibold">← Back</Text>
             </Pressable>
-            <Text className="text-lg font-bold text-gray-900 dark:text-white">Employees</Text>
+            <Text className="text-xl font-extrabold text-on-surface tracking-tight">Team Directory</Text>
           </View>
           <Pressable
             onPress={() => setShowInviteForm((v) => !v)}
-            className="bg-brand rounded-xl px-3 py-1.5 active:opacity-80"
+            className="kinetic-gradient rounded-xl px-4 py-2 active:opacity-80"
           >
-            <Text className="text-white text-sm font-semibold">+ Invite</Text>
+            <Text className="text-on-primary text-sm font-bold">+ Invite</Text>
           </Pressable>
         </View>
 
@@ -94,16 +94,12 @@ export default function BOEmployeeManagementScreen() {
             <Pressable
               key={t}
               onPress={() => setTab(t)}
-              className={`flex-1 py-2 rounded-xl items-center ${
-                tab === t ? 'bg-brand' : 'bg-gray-100 dark:bg-gray-800'
+              className={`flex-1 py-2.5 rounded-xl items-center ${
+                tab === t ? 'kinetic-gradient' : 'bg-surface-container-highest'
               }`}
             >
-              <Text
-                className={`text-sm font-semibold capitalize ${
-                  tab === t ? 'text-white' : 'text-gray-600 dark:text-gray-300'
-                }`}
-              >
-                {t === 'staff' ? `Staff (${staffList.length})` : `Pending (${invitationList.length})`}
+              <Text className={`text-xs font-bold ${tab === t ? 'text-on-primary' : 'text-on-surface-variant'}`}>
+                {t === 'staff' ? `STAFF (${staffList.length})` : `PENDING (${invitationList.length})`}
               </Text>
             </Pressable>
           ))}
@@ -111,7 +107,7 @@ export default function BOEmployeeManagementScreen() {
       </View>
 
       <ScrollView
-        className="flex-1 px-4 pt-4"
+        className="flex-1 px-4 pt-5"
         refreshControl={
           <RefreshControl
             refreshing={staffQuery.isRefetching || invitationsQuery.isRefetching}
@@ -121,35 +117,29 @@ export default function BOEmployeeManagementScreen() {
       >
         {/* Invite form */}
         {showInviteForm && (
-          <View className="bg-white dark:bg-gray-900 rounded-2xl p-4 mb-4 border border-gray-100 dark:border-gray-800">
-            <Text className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+          <View className="bg-surface-container-lowest rounded-2xl p-5 mb-4">
+            <Text className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant mb-4">
               Invite New Member
             </Text>
             <TextInput
-              className="border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-base text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 mb-3"
+              className="w-full h-12 px-4 bg-surface-container-high rounded-xl text-on-surface text-base mb-3"
               placeholder="Email address"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#737685"
               value={inviteEmail}
               onChangeText={setInviteEmail}
               autoCapitalize="none"
               keyboardType="email-address"
             />
-            <View className="flex-row gap-2 mb-3">
+            <View className="flex-row gap-2 mb-4">
               {(['staff', 'operator'] as const).map((r) => (
                 <Pressable
                   key={r}
                   onPress={() => setInviteRole(r)}
-                  className={`flex-1 py-2.5 rounded-xl items-center border ${
-                    inviteRole === r
-                      ? 'bg-brand border-brand'
-                      : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900'
+                  className={`flex-1 py-2.5 rounded-xl items-center ${
+                    inviteRole === r ? 'kinetic-gradient' : 'bg-surface-container-high'
                   }`}
                 >
-                  <Text
-                    className={`text-sm font-semibold capitalize ${
-                      inviteRole === r ? 'text-white' : 'text-gray-600 dark:text-gray-300'
-                    }`}
-                  >
+                  <Text className={`text-xs font-bold capitalize ${inviteRole === r ? 'text-on-primary' : 'text-on-surface-variant'}`}>
                     {r}
                   </Text>
                 </Pressable>
@@ -158,12 +148,12 @@ export default function BOEmployeeManagementScreen() {
             <Pressable
               onPress={() => inviteMutation.mutate()}
               disabled={inviteMutation.isPending || !inviteEmail.trim()}
-              className="bg-brand rounded-xl py-3 items-center active:opacity-80 disabled:opacity-50"
+              className="kinetic-gradient rounded-xl py-3.5 items-center active:opacity-80 disabled:opacity-50"
             >
               {inviteMutation.isPending ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text className="text-white font-semibold">Send Invitation</Text>
+                <Text className="text-on-primary font-bold">Send Invitation</Text>
               )}
             </Pressable>
           </View>
@@ -174,35 +164,34 @@ export default function BOEmployeeManagementScreen() {
           <>
             {staffList.length === 0 && (
               <View className="py-16 items-center">
-                <Text className="text-gray-400">No staff members yet</Text>
+                <Text className="text-on-surface-variant text-sm">No staff members yet</Text>
               </View>
             )}
             {staffList.map((s) => (
               <View
                 key={s.id}
-                className="bg-white dark:bg-gray-900 rounded-2xl px-4 py-3.5 mb-3 border border-gray-100 dark:border-gray-800 flex-row items-center"
+                className="bg-surface-container-lowest rounded-xl px-4 py-4 mb-3 flex-row items-center"
               >
+                <View className="w-10 h-10 rounded-full bg-surface-container-high items-center justify-center mr-3">
+                  <Text className="text-sm font-bold text-primary">{s.full_name.charAt(0)}</Text>
+                </View>
                 <View className="flex-1">
-                  <Text className="text-base font-semibold text-gray-900 dark:text-white">
-                    {s.full_name}
-                  </Text>
-                  <Text className="text-xs text-gray-400">{s.email}</Text>
-                  <Text className="text-xs text-gray-400 capitalize mt-0.5">{s.role}</Text>
+                  <Text className="text-sm font-semibold text-on-surface">{s.full_name}</Text>
+                  <Text className="text-xs text-on-surface-variant mt-0.5">{s.email}</Text>
+                  <View className="self-start mt-1.5 px-2 py-0.5 rounded-full bg-secondary-container">
+                    <Text className="text-[10px] font-bold uppercase tracking-wider text-on-secondary-container">{s.role}</Text>
+                  </View>
                 </View>
                 <Pressable
                   onPress={() =>
                     Alert.alert('Remove', `Remove ${s.full_name} from the team?`, [
                       { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Remove',
-                        style: 'destructive',
-                        onPress: () => removeMutation.mutate(s.id),
-                      },
+                      { text: 'Remove', style: 'destructive', onPress: () => removeMutation.mutate(s.id) },
                     ])
                   }
-                  className="active:opacity-60"
+                  className="active:opacity-60 ml-2"
                 >
-                  <Text className="text-sm text-red-400">Remove</Text>
+                  <Text className="text-xs font-semibold text-error">Remove</Text>
                 </Pressable>
               </View>
             ))}
@@ -214,29 +203,32 @@ export default function BOEmployeeManagementScreen() {
           <>
             {invitationList.length === 0 && (
               <View className="py-16 items-center">
-                <Text className="text-gray-400">No pending invitations</Text>
+                <Text className="text-on-surface-variant text-sm">No pending invitations</Text>
               </View>
             )}
             {invitationList.map((inv) => (
               <View
                 key={inv.id}
-                className="bg-white dark:bg-gray-900 rounded-2xl px-4 py-3.5 mb-3 border border-gray-100 dark:border-gray-800 flex-row items-center"
+                className="bg-surface-container-lowest rounded-xl px-4 py-4 mb-3 flex-row items-center"
               >
+                <View className="w-10 h-10 rounded-full bg-surface-container-high items-center justify-center mr-3">
+                  <Text className="text-sm font-bold text-primary">{inv.email.charAt(0).toUpperCase()}</Text>
+                </View>
                 <View className="flex-1">
-                  <Text className="text-base font-semibold text-gray-900 dark:text-white">
-                    {inv.email}
-                  </Text>
-                  <Text className="text-xs text-yellow-500 capitalize mt-0.5">{inv.status}</Text>
-                  <Text className="text-xs text-gray-400">
+                  <Text className="text-sm font-semibold text-on-surface">{inv.email}</Text>
+                  <View className="self-start mt-1.5 px-2 py-0.5 rounded-full bg-warning-container">
+                    <Text className="text-[10px] font-bold uppercase tracking-wider text-on-warning-container">{inv.status}</Text>
+                  </View>
+                  <Text className="text-xs text-on-surface-variant mt-1">
                     {new Date(inv.created_at).toLocaleDateString('vi-VN')}
                   </Text>
                 </View>
                 <Pressable
                   onPress={() => resendMutation.mutate(inv.id)}
                   disabled={resendMutation.isPending}
-                  className="active:opacity-60"
+                  className="active:opacity-60 ml-2"
                 >
-                  <Text className="text-sm text-brand">Resend</Text>
+                  <Text className="text-xs font-semibold text-primary">Resend</Text>
                 </Pressable>
               </View>
             ))}
