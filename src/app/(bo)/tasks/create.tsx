@@ -7,6 +7,8 @@ import { tasksApi } from '@/lib/api/tasks';
 import { staffApi } from '@/lib/api/staff';
 import { ApiError } from '@/lib/api/client';
 import type { TaskPriority } from '@/types/api';
+import { LocationPickerModal } from '@/components/LocationPickerModal';
+import type { PickedLocation } from '@/components/LocationPickerModal';
 
 const PRIORITIES: TaskPriority[] = ['low', 'medium', 'high', 'urgent'];
 
@@ -33,13 +35,12 @@ export default function BOTaskCreateScreen() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<TaskPriority | undefined>();
-  const [locationName, setLocationName] = useState('');
-  const [locationLat, setLocationLat] = useState('');
-  const [locationLng, setLocationLng] = useState('');
+  const [pickedLocation, setPickedLocation] = useState<PickedLocation | null>(null);
   const [locationRadius, setLocationRadius] = useState('');
   const [scheduledAt, setScheduledAt] = useState('');
   const [deadline, setDeadline] = useState('');
   const [selectedStaff, setSelectedStaff] = useState<string[]>([]);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
 
   const editQuery = useQuery({
     queryKey: ['task', editId],
@@ -54,9 +55,11 @@ export default function BOTaskCreateScreen() {
     setTitle(task.title ?? '');
     setDescription(task.description ?? '');
     setPriority(task.priority);
-    setLocationName(task.location_name ?? '');
-    setLocationLat(task.location_lat?.toString() ?? '');
-    setLocationLng(task.location_lng?.toString() ?? '');
+    if (task.location_lat != null && task.location_lng != null) {
+      setPickedLocation({ name: task.location_name ?? '', lat: task.location_lat, lng: task.location_lng });
+    } else {
+      setPickedLocation(null);
+    }
     setLocationRadius(task.location_radius_m?.toString() ?? '');
     setScheduledAt(task.scheduled_at ? task.scheduled_at.slice(0, 16) : '');
     setDeadline(task.deadline ? task.deadline.slice(0, 16) : '');
@@ -76,9 +79,9 @@ export default function BOTaskCreateScreen() {
         title: title.trim(),
         description: description.trim() || undefined,
         priority,
-        location_name: locationName.trim() || undefined,
-        location_lat: locationLat ? parseFloat(locationLat) : undefined,
-        location_lng: locationLng ? parseFloat(locationLng) : undefined,
+        location_name: pickedLocation?.name || undefined,
+        location_lat: pickedLocation?.lat,
+        location_lng: pickedLocation?.lng,
         location_radius_m: locationRadius ? parseInt(locationRadius) : undefined,
         scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
         deadline: deadline ? new Date(deadline).toISOString() : undefined,
@@ -98,9 +101,9 @@ export default function BOTaskCreateScreen() {
         title: title.trim(),
         description: description.trim() || undefined,
         priority,
-        location_name: locationName.trim() || undefined,
-        location_lat: locationLat ? parseFloat(locationLat) : undefined,
-        location_lng: locationLng ? parseFloat(locationLng) : undefined,
+        location_name: pickedLocation?.name || undefined,
+        location_lat: pickedLocation?.lat,
+        location_lng: pickedLocation?.lng,
         location_radius_m: locationRadius ? parseInt(locationRadius) : undefined,
         scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
         deadline: deadline ? new Date(deadline).toISOString() : undefined,
@@ -188,31 +191,26 @@ export default function BOTaskCreateScreen() {
           <View>
             <FieldLabel>Location</FieldLabel>
             <View className="gap-2">
-              <TextInput
-                className="w-full h-12 px-4 bg-surface-container-high rounded-xl text-on-surface text-base"
-                placeholder="Address / location name"
-                placeholderTextColor="#737685"
-                value={locationName}
-                onChangeText={setLocationName}
-              />
-              <View className="flex-row gap-2">
-                <TextInput
-                  className="flex-1 h-12 px-4 bg-surface-container-high rounded-xl text-on-surface text-sm"
-                  placeholder="Latitude"
-                  placeholderTextColor="#737685"
-                  value={locationLat}
-                  onChangeText={setLocationLat}
-                  keyboardType="decimal-pad"
-                />
-                <TextInput
-                  className="flex-1 h-12 px-4 bg-surface-container-high rounded-xl text-on-surface text-sm"
-                  placeholder="Longitude"
-                  placeholderTextColor="#737685"
-                  value={locationLng}
-                  onChangeText={setLocationLng}
-                  keyboardType="decimal-pad"
-                />
-              </View>
+              {pickedLocation && (
+                <View className="flex-row items-center bg-surface-container-high rounded-xl px-4 py-3">
+                  <Text className="mr-2">📍</Text>
+                  <Text className="flex-1 text-sm text-on-surface" numberOfLines={2}>
+                    {pickedLocation.name || 'Vị trí đã chọn'}
+                  </Text>
+                  <Pressable onPress={() => setPickedLocation(null)} className="pl-2 active:opacity-60">
+                    <Text className="text-on-surface-variant text-xs">✕</Text>
+                  </Pressable>
+                </View>
+              )}
+              <Pressable
+                onPress={() => setShowLocationPicker(true)}
+                className="h-12 px-4 bg-surface-container-high rounded-xl flex-row items-center active:opacity-70"
+              >
+                <Text className="flex-1 text-on-surface-variant">
+                  {pickedLocation ? 'Thay đổi vị trí...' : 'Chọn trên bản đồ...'}
+                </Text>
+                <Text>🗺️</Text>
+              </Pressable>
               <TextInput
                 className="w-full h-12 px-4 bg-surface-container-high rounded-xl text-on-surface text-base"
                 placeholder="GPS radius (meters)"
@@ -223,6 +221,14 @@ export default function BOTaskCreateScreen() {
               />
             </View>
           </View>
+          <LocationPickerModal
+            visible={showLocationPicker}
+            onClose={() => setShowLocationPicker(false)}
+            onConfirm={(loc) => { setPickedLocation(loc); setShowLocationPicker(false); }}
+            initialLat={pickedLocation?.lat}
+            initialLng={pickedLocation?.lng}
+            initialName={pickedLocation?.name}
+          />
 
           {/* Schedule & Deadline */}
           <View>

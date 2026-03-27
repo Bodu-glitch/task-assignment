@@ -38,6 +38,7 @@ function RootStack() {
       </Stack.Protected>
       <Stack.Protected guard={isAuthenticated}>
         <Stack.Screen name="notifications" />
+        <Stack.Screen name="profile" />
       </Stack.Protected>
     </Stack>
   );
